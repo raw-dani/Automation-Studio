@@ -1,0 +1,221 @@
+{
+  "id": "workflow_isi_data_bidang_bangsari2",
+  "name": "Isi Data Bidang - DESA BANGUNSARI 2",
+  "version": "1.0",
+  "description": "Workflow untuk mengisi data bidang tanah dari file LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx",
+  "data_source": {
+    "type": "excel",
+    "config": {
+      "file_path": "data/LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx",
+      "sheet": "Sheet1"
+    }
+  },
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "wait",
+      "label": "Wait browser/page siap",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "body",
+        "timeout": 15000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "loop",
+      "label": "Loop setiap baris bidang tanah",
+      "params": {
+        "loop_type": "data_source",
+        "data_source": "bidang"
+      },
+      "on_error": "skip",
+      "retry": {"max_retries": 2, "delay": 2000}
+    },
+    {
+      "id": "step_3",
+      "type": "wait",
+      "label": "Wait sebelum input form",
+      "params": {"wait_type": "fixed", "time": 1500}
+    },
+    {
+      "id": "step_4",
+      "type": "click",
+      "label": "Klik tombol Tambah/Baru",
+      "params": {
+        "selector": "#btn-tambah",
+        "wait_before": 500
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "input_text",
+      "label": "Input PBT",
+      "params": {
+        "selector": "#pbt",
+        "value": "{{data.PBT}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_6",
+      "type": "input_text",
+      "label": "Input NIB",
+      "params": {
+        "selector": "#nib",
+        "value": "{{data.NIB}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_7",
+      "type": "select_dropdown",
+      "label": "Pilih Keadaan Tanah",
+      "params": {
+        "selector": "#keadaan_tanah",
+        "select_by": "label",
+        "select_value": "{{data.Keadaan Tanah}}"
+      }
+    },
+    {
+      "id": "step_8",
+      "type": "input_text",
+      "label": "Input Tanda Batas",
+      "params": {
+        "selector": "#tanda_batas",
+        "value": "{{data.Tanda Batas}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_9",
+      "type": "input_text",
+      "label": "Input Penunjuk Batas",
+      "params": {
+        "selector": "#penunjuk_batas",
+        "value": "{{data.Penunjuk Batas}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_10",
+      "type": "input_text",
+      "label": "Input Hal lain-lain",
+      "params": {
+        "selector": "#hal_lain",
+        "value": "{{data.Hal lain-lain}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_11",
+      "type": "input_text",
+      "label": "Input Nama Jalan",
+      "params": {
+        "selector": "#nama_jalan",
+        "value": "{{data.Nama Jalan}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_12",
+      "type": "input_text",
+      "label": "Input Nomor Jalan",
+      "params": {
+        "selector": "#nomor_jalan",
+        "value": "{{data.Nomor Jalan}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_13",
+      "type": "input_text",
+      "label": "Input Alamat Tambahan",
+      "params": {
+        "selector": "#alamat_tambahan",
+        "value": "{{data.Alamat Tambahan}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_14",
+      "type": "input_text",
+      "label": "Input Kode Pos",
+      "params": {
+        "selector": "#kode_pos",
+        "value": "{{data.Kode Pos}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_15",
+      "type": "select_dropdown",
+      "label": "Pilih Penggunaan",
+      "params": {
+        "selector": "#penggunaan",
+        "select_by": "label",
+        "select_value": "{{data.Penggunaan}}"
+      }
+    },
+    {
+      "id": "step_16",
+      "type": "select_dropdown",
+      "label": "Pilih Pemanfaatan",
+      "params": {
+        "selector": "#pemanfaatan",
+        "select_by": "label",
+        "select_value": "{{data.Pemanfaatan}}"
+      }
+    },
+    {
+      "id": "step_17",
+      "type": "input_text",
+      "label": "Input Metode Ukur",
+      "params": {
+        "selector": "#metode_ukur",
+        "value": "{{data.Metode Ukur}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_18",
+      "type": "input_text",
+      "label": "Input Akurasi Bidang",
+      "params": {
+        "selector": "#akurasi_bidang",
+        "value": "{{data.Akurasi Bidang}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_19",
+      "type": "wait",
+      "label": "Wait sebelum submit",
+      "params": {"wait_type": "fixed", "time": 1000}
+    },
+    {
+      "id": "step_20",
+      "type": "click",
+      "label": "Klik tombol Simpan",
+      "params": {
+        "selector": "#btn-simpan",
+        "wait_before": 500
+      }
+    },
+    {
+      "id": "step_21",
+      "type": "wait",
+      "label": "Wait loading selesai",
+      "params": {
+        "wait_type": "until_hidden",
+        "selector": ".loading, .spinner",
+        "timeout": 10000
+      }
+    }
+  ]
+}

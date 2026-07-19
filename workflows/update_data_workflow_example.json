@@ -1,0 +1,106 @@
+{
+  "id": "workflow_update_data",
+  "name": "Update Data dari Excel (Browser Sudah Login)",
+  "version": "1.0",
+  "description": "Workflow untuk update data secara berulang pada aplikasi yang sudah login. Asumsikan browser sudah login dan session masih aktif.",
+  "data_source": {
+    "type": "excel",
+    "config": {
+      "file_path": "data/update_data.xlsx",
+      "sheet": "Sheet1"
+    }
+  },
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "wait",
+      "label": "Wait untuk pastikan browser siap",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "body",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "loop",
+      "label": "Loop setiap baris data dari Excel",
+      "params": {
+        "loop_type": "data_source",
+        "data_source": "customers"
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 1,
+        "delay": 1000
+      }
+    },
+    {
+      "id": "step_3",
+      "type": "wait",
+      "label": "Wait sebelum update",
+      "params": {
+        "wait_type": "fixed",
+        "time": 2000
+      }
+    },
+    {
+      "id": "step_4",
+      "type": "click",
+      "label": "Klik tombol Edit untuk data ke-{{data.id}}",
+      "params": {
+        "selector": "#edit-{{data.id}}",
+        "wait_before": 1000
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "input_text",
+      "label": "Update nama",
+      "params": {
+        "selector": "#input-name",
+        "value": "{{data.nama}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_6",
+      "type": "input_text",
+      "label": "Update email",
+      "params": {
+        "selector": "#input-email",
+        "value": "{{data.email}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_7",
+      "type": "click",
+      "label": "Klik tombol Save",
+      "params": {
+        "selector": "#btn-save",
+        "wait_before": 500
+      }
+    },
+    {
+      "id": "step_8",
+      "type": "wait",
+      "label": "Wait untuk confirmation message",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": ".alert-success",
+        "timeout": 5000
+      }
+    }
+  ]
+}

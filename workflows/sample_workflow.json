@@ -1,0 +1,95 @@
+{
+  "id": "workflow_001",
+  "name": "Sample Workflow - Login",
+  "version": "1.0",
+  "data_source": null,
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "click",
+      "label": "Klik tombol Login",
+      "params": {
+        "selector": "#login-button",
+        "selector_type": "css",
+        "wait_before": 1000,
+        "force": false,
+        "timeout": 30000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "input_text",
+      "label": "Isi username",
+      "params": {
+        "selector": "#username",
+        "selector_type": "css",
+        "value": "admin",
+        "clear_first": true,
+        "type_delay": 50
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_3",
+      "type": "input_text",
+      "label": "Isi password",
+      "params": {
+        "selector": "#password",
+        "selector_type": "css",
+        "value": "password123",
+        "clear_first": true,
+        "type_delay": 50
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_4",
+      "type": "click",
+      "label": "Klik tombol Submit",
+      "params": {
+        "selector": "#submit-btn",
+        "selector_type": "css",
+        "wait_before": 500,
+        "force": false,
+        "timeout": 30000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "wait",
+      "label": "Tunggu 2 detik",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 2000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 1,
+        "delay": 1000
+      }
+    }
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "id": "workflow_002",
+  "name": "Input Data Customer from Excel",
+  "version": "1.0",
+  "data_source": {
+    "type": "excel",
+    "config": {
+      "file_path": "data/customers.xlsx",
+      "sheet": "Sheet1"
+    }
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "click",
+      "label": "Buka form tambah customer",
+      "params": {
+        "selector": "#btn-add-customer",
+        "selector_type": "css",
+        "wait_before": 1000
+      },
+      "on_error": "stop"
+    },
+    {
+      "id": "step_2",
+      "type": "input_text",
+      "label": "Isi nama customer",
+      "params": {
+        "selector": "#customer-name",
+        "value": "{{data.nama}}",
+        "clear_first": true
+      },
+      "on_error": "stop"
+    },
+    {
+      "id": "step_3",
+      "type": "input_text",
+      "label": "Isi email customer",
+      "params": {
+        "selector": "#customer-email",
+        "value": "{{data.email}}",
+        "clear_first": true
+      },
+      "on_error": "stop"
+    },
+    {
+      "id": "step_4",
+      "type": "select_dropdown",
+      "label": "Pilih jenis kelamin",
+      "params": {
+        "selector": "#gender",
+        "select_by": "label",
+        "select_value": "{{data.jenis_kelamin}}",
+        "wait_before": 500
+      },
+      "on_error": "stop"
+    },
+    {
+      "id": "step_5",
+      "type": "if_else",
+      "label": "Cek jika customer aktif",
+      "params": {
+        "condition": {
+          "variable": "{{data.status}}",
+          "operator": "equals",
+          "value": "Aktif"
+        }
+      },
+      "then": [
+        {
+          "id": "step_5a",
+          "type": "click",
+          "label": "Centang aktif",
+          "params": {
+            "selector": "#is-active",
+            "selector_type": "css"
+          }
+        }
+      ],
+      "else": [
+        {
+          "id": "step_5b",
+          "type": "click",
+          "label": "Centang tidak aktif",
+          "params": {
+            "selector": "#is-inactive",
+            "selector_type": "css"
+          }
+        }
+      ],
+      "on_error": "skip"
+    },
+    {
+      "id": "step_6",
+      "type": "upload_file",
+      "label": "Upload foto customer",
+      "params": {
+        "selector": "#photo-upload",
+        "file_path": "{{data.foto_path}}",
+        "wait_before": 500
+      },
+      "on_error": "skip"
+    },
+    {
+      "id": "step_7",
+      "type": "click",
+      "label": "Klik tombol Simpan",
+      "params": {
+        "selector": "#btn-save",
+        "wait_before": 500,
+        "wait_after": 2000
+      },
+      "on_error": "stop"
+    },
+    {
+      "id": "step_8",
+      "type": "wait",
+      "label": "Tunggu notifikasi sukses",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": ".success-notification",
+        "timeout": 10000
+      },
+      "on_error": "skip"
+    }
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  }
+}

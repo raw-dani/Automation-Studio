@@ -1,0 +1,146 @@
+{
+  "id": "workflow_isi_data_bersama_saluran",
+  "name": "Isi Data Bersama/Saluran - LAYOUT MELENGKAPI",
+  "version": "1.0",
+  "description": "Workflow untuk mengisi data dari Excel LAYOUT MELENGKAPI BERKAS GU 1.xlsx dan LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx ke aplikasi web.",
+  "data_source": {
+    "type": "excel",
+    "config": {
+      "file_path": "data/LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
+      "sheet": "Sheet1"
+    }
+  },
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "wait",
+      "label": "Wait browser/page siap",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "body",
+        "timeout": 15000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "loop",
+      "label": "Loop setiap pemilik/hak (baris Excel)",
+      "params": {
+        "loop_type": "data_source",
+        "data_source": "pemilik"
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 1,
+        "delay": 1000
+      }
+    },
+    {
+      "id": "step_3",
+      "type": "wait",
+      "label": "Wait sebelum input form",
+      "params": {
+        "wait_type": "fixed",
+        "time": 1500
+      }
+    },
+    {
+      "id": "step_4",
+      "type": "click",
+      "label": "Klik tombol Tambah/Baru",
+      "params": {
+        "selector": "#btn-tambah",
+        "wait_before": 500
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "input_text",
+      "label": "Input Nama Pemilik",
+      "params": {
+        "selector": "#nama",
+        "value": "{{data.NAMA}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_6",
+      "type": "input_text",
+      "label": "Input NIK",
+      "params": {
+        "selector": "#nik",
+        "value": "{{data.NIK}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_7",
+      "type": "input_text",
+      "label": "Input Alamat",
+      "params": {
+        "selector": "#alamat",
+        "value": "{{data.ALAMAT}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_8",
+      "type": "input_text",
+      "label": "Input Tempat Lahir",
+      "params": {
+        "selector": "#tempat_lahir",
+        "value": "{{data.TEMPAT LAHIR}}",
+        "clear_first": true
+      }
+    },
+    {
+      "id": "step_9",
+      "type": "select_dropdown",
+      "label": "Pilih Status",
+      "params": {
+        "selector": "#status",
+        "select_by": "label",
+        "select_value": "{{data.STATUS}}",
+        "wait_before": 300
+      }
+    },
+    {
+      "id": "step_10",
+      "type": "wait",
+      "label": "Wait sebelum submit",
+      "params": {
+        "wait_type": "fixed",
+        "time": 1000
+      }
+    },
+    {
+      "id": "step_11",
+      "type": "click",
+      "label": "Klik tombol Simpan",
+      "params": {
+        "selector": "#btn-simpan",
+        "wait_before": 500
+      }
+    },
+    {
+      "id": "step_12",
+      "type": "wait",
+      "label": "Wait confirmation/loading selesai",
+      "params": {
+        "wait_type": "until_hidden",
+        "selector": ".loading, .spinner",
+        "timeout": 10000
+      }
+    }
+  ]
+}

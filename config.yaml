@@ -1,0 +1,38 @@
+# Automation Studio - Global Configuration
+
+# General Settings
+general:
+  app_name: "Automation Studio"
+  version: "1.0.0"
+  debug: false
+
+# Playwright Settings
+playwright:
+  headless: false
+  browser: "chromium"  # chromium, firefox, webkit
+  slow_mo: 100         # ms delay between actions
+  viewport:
+    width: 1280
+    height: 720
+  timeout: 30000       # default timeout in ms
+
+# Execution Settings
+execution:
+  max_retries: 3
+  retry_delay: 2000    # ms
+  screenshot_on_error: true
+  screenshot_on_step: false
+  log_level: "INFO"
+
+# Paths
+paths:
+  workflows: "workflows"
+  logs: "logs"
+  screenshots: "screenshots"
+  data: "data"
+
+# Screenshot Settings
+screenshot:
+  format: "png"
+  quality: 100
+  full_page: false
