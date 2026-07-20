@@ -90,8 +90,15 @@ class Select2Action(BaseAction):
             await page.locator(click_target).last.click(timeout=timeout)
             await asyncio.sleep(0.3)
             
-            # Tentukan search input selector
-            target_input = search_selector or f"#{container_id} .select2-search__field, .select2-search__field"
+            # Wait for dropdown results container to appear
+            dropdown_selector = f"#{container_id}, .select2-container--open"
+            await page.wait_for_selector(dropdown_selector, state="visible", timeout=timeout)
+            await asyncio.sleep(0.2)
+            
+            # Now find search input within the opened dropdown context
+            # Use the dropdown container to scope the search field lookup
+            scoped_search = f"{dropdown_selector} .select2-search__field, .select2-container--open .select2-search__field"
+            target_input = search_selector or scoped_search
             
             # Tunggu search input muncul
             await page.wait_for_selector(target_input, state="visible", timeout=timeout)
