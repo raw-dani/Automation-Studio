@@ -1,19 +1,14 @@
 {
-  "id": "workflow_import_produk_superpos",
-  "name": "Import Produk ke Super POS",
+  "id": "workflow_1962686e",
+  "name": "My Workflow",
   "version": "1.0",
-  "url": "http://super-pos/login",
+  "url": "http://superpos.local/public/login",
   "data_source": {
-    "type": "excel",
     "config": {
       "file_path": "data/Dummy_Import_Produk (1).xlsx",
       "sheet": "Sheet"
-    }
-  },
-  "monitoring": {
-    "screenshot_on_error": true,
-    "screenshot_on_step": false,
-    "log_level": "INFO"
+    },
+    "type": "excel"
   },
   "steps": [
     {
@@ -170,7 +165,7 @@
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -186,7 +181,7 @@
         "add_new": false,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -202,7 +197,7 @@
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -218,7 +213,7 @@
         "add_new": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -234,7 +229,7 @@
         "add_new": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -250,7 +245,7 @@
         "add_new": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -259,14 +254,14 @@
     {
       "id": "step_17",
       "type": "input_text",
-      "label": "Input Harga Pembelian (Termasuk Pajak)",
+      "label": "Input Harga Pembelian",
       "params": {
-        "selector": "#single_dpp_inc_tax",
+        "selector": "#single_dpp, #single_dpp_inc_tax",
         "value": "{{data.Harga Pembelian (Termasuk Pajak)}}",
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -277,12 +272,12 @@
       "type": "input_text",
       "label": "Input Harga Jual",
       "params": {
-        "selector": "#single_dsp_inc_tax",
+        "selector": "#single_dsp, #single_dsp_inc_tax",
         "value": "{{data.Harga penjualan}}",
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -297,7 +292,7 @@
         "value": "",
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -313,7 +308,7 @@
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -329,7 +324,7 @@
         "clear_first": true,
         "skip_if_empty": true
       },
-      "on_error": "skip",
+      "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -384,6 +379,6 @@
     "screenshot_on_step": false,
     "log_level": "INFO"
   },
-  "created_at": "2026-07-19T23:28:54.577708",
-  "updated_at": "2026-07-20T18:59:19.000000"
+  "created_at": "2026-07-20T20:37:56.349176",
+  "updated_at": "2026-07-20T20:38:51.796290"
 }

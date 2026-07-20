@@ -72,18 +72,21 @@ class InputTextAction(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
-            # Tunggu elemen muncul
-            await page.wait_for_selector(play_selector, timeout=timeout)
+            # Tunggu elemen muncul dan terlihat
+            await page.wait_for_selector(play_selector, state="visible", timeout=timeout)
+            
+            # Gunakan locator untuk menghindari masalah dengan multiple matching elements
+            locator = page.locator(play_selector).first
             
             # Clear input jika diperlukan
             if clear_first:
-                await page.fill(play_selector, "")
+                await locator.fill("")
             
             # Type text dengan delay (simulasi ketikan manusia)
             if type_delay > 0:
-                await page.type(play_selector, value, delay=type_delay)
+                await locator.type(value, delay=type_delay)
             else:
-                await page.fill(play_selector, value)
+                await locator.fill(value)
             
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)
