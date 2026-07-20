@@ -23,6 +23,7 @@ class InputTextAction(BaseAction):
             "wait_before": 500,
             "wait_after": 500,
             "timeout": 30000,
+            "skip_if_empty": False,  # Skip step jika value kosong
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -49,10 +50,18 @@ class InputTextAction(BaseAction):
         wait_before = params.get("wait_before", 500)
         wait_after = params.get("wait_after", 500)
         timeout = params.get("timeout", 30000)
+        skip_if_empty = params.get("skip_if_empty", False)
         
         # Variable substitution
         selector = self._substitute_variables(selector, context)
         value = self._substitute_variables(value, context)
+        
+        # Skip jika value kosong
+        if skip_if_empty and not value:
+            return ActionResult(
+                status=ActionStatus.SKIPPED,
+                message=f"Value kosong, melewati input '{selector}'",
+            )
         
         # Konversi selector
         play_selector = self._convert_selector(selector, selector_type)

@@ -1,14 +1,19 @@
 {
-  "id": "workflow_56a671cd",
-  "name": "My Workflow",
+  "id": "workflow_import_produk_superpos",
+  "name": "Import Produk ke Super POS",
   "version": "1.0",
   "url": "http://super-pos/login",
   "data_source": {
+    "type": "excel",
     "config": {
-      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/Dummy_Import_Produk (1).xlsx",
+      "file_path": "data/Dummy_Import_Produk (1).xlsx",
       "sheet": "Sheet"
-    },
-    "type": "excel"
+    }
+  },
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
   },
   "steps": [
     {
@@ -147,8 +152,7 @@
       "type": "loop",
       "label": "Loop setiap produk dari Excel",
       "params": {
-        "loop_type": "data_source",
-        "data_source": "produk"
+        "loop_type": "data_source"
       },
       "on_error": "stop",
       "retry": {
@@ -161,11 +165,12 @@
       "type": "input_text",
       "label": "Input Nama Produk",
       "params": {
-        "selector": "#nama_produk, input[name='nama_produk'], input[name='name']",
+        "selector": "#name, input[name='name']",
         "value": "{{data.Nama Produk}}",
-        "clear_first": true
+        "clear_first": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -174,14 +179,14 @@
     {
       "id": "step_12",
       "type": "select2",
-      "label": "Input Merek",
+      "label": "Pilih Jenis Barcode",
       "params": {
-        "clear_first": true,
-        "search_selector": "{{data.Merek}}",
-        "selector": "#brand_id",
-        "value": "{{data.Merek}}"
+        "selector": "#barcode_type",
+        "value": "{{data.Jenis Barcode}}",
+        "add_new": false,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -192,11 +197,12 @@
       "type": "input_text",
       "label": "Input SKU",
       "params": {
-        "selector": "#sku, input[name='sku']",
+        "selector": "#sku",
         "value": "{{data.SKU}}",
-        "clear_first": true
+        "clear_first": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -204,14 +210,15 @@
     },
     {
       "id": "step_14",
-      "type": "select_dropdown",
-      "label": "Pilih Kategori",
+      "type": "select2",
+      "label": "Pilih Merek",
       "params": {
-        "selector": "#kategori, select[name='kategori'], select[name='category']",
-        "select_by": "label",
-        "select_value": "{{data.Kategori}}"
+        "selector": "#brand_id",
+        "value": "{{data.Merek}}",
+        "add_new": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -219,14 +226,15 @@
     },
     {
       "id": "step_15",
-      "type": "input_text",
-      "label": "Input Harga Pembelian",
+      "type": "select2",
+      "label": "Pilih Kategori",
       "params": {
-        "selector": "#harga_beli, input[name='harga_beli'], input[name='purchase_price']",
-        "value": "{{data.Harga Pembelian (Termasuk Pajak)}}",
-        "clear_first": true
+        "selector": "#category_id",
+        "value": "{{data.Kategori}}",
+        "add_new": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -234,14 +242,15 @@
     },
     {
       "id": "step_16",
-      "type": "input_text",
-      "label": "Input Harga Jual",
+      "type": "select2",
+      "label": "Pilih Unit",
       "params": {
-        "selector": "#harga_jual, input[name='harga_jual'], input[name='selling_price']",
-        "value": "{{data.Harga penjualan}}",
-        "clear_first": true
+        "selector": "#unit_id",
+        "value": "{{data.Unit}}",
+        "add_new": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -250,13 +259,14 @@
     {
       "id": "step_17",
       "type": "input_text",
-      "label": "Input Stok Awal",
+      "label": "Input Harga Pembelian (Termasuk Pajak)",
       "params": {
-        "selector": "#stok, input[name='stok'], input[name='stock']",
-        "value": "{{data.Stok Awal}}",
-        "clear_first": true
+        "selector": "#single_dpp_inc_tax",
+        "value": "{{data.Harga Pembelian (Termasuk Pajak)}}",
+        "clear_first": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -265,13 +275,14 @@
     {
       "id": "step_18",
       "type": "input_text",
-      "label": "Input Berat",
+      "label": "Input Harga Jual",
       "params": {
-        "selector": "#berat, input[name='berat'], input[name='weight']",
-        "value": "{{data.Berat}}",
-        "clear_first": true
+        "selector": "#single_dsp_inc_tax",
+        "value": "{{data.Harga penjualan}}",
+        "clear_first": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -279,14 +290,14 @@
     },
     {
       "id": "step_19",
-      "type": "select_dropdown",
-      "label": "Pilih Unit",
+      "type": "input_text",
+      "label": "Input Stok Awal",
       "params": {
-        "selector": "#unit, select[name='unit']",
-        "select_by": "label",
-        "select_value": "{{data.Unit}}"
+        "selector": "#opening_stock_button",
+        "value": "",
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -295,13 +306,14 @@
     {
       "id": "step_20",
       "type": "input_text",
-      "label": "Input Deskripsi Produk",
+      "label": "Input Berat",
       "params": {
-        "selector": "#deskripsi, textarea[name='deskripsi'], textarea[name='description']",
-        "value": "{{data.Deskripsi Produk}}",
-        "clear_first": true
+        "selector": "#weight",
+        "value": "{{data.Berat}}",
+        "clear_first": true,
+        "skip_if_empty": true
       },
-      "on_error": "stop",
+      "on_error": "skip",
       "retry": {
         "max_retries": 3,
         "delay": 2000
@@ -309,6 +321,22 @@
     },
     {
       "id": "step_21",
+      "type": "input_text",
+      "label": "Input Deskripsi Produk",
+      "params": {
+        "selector": "#product_description",
+        "value": "{{data.Deskripsi Produk}}",
+        "clear_first": true,
+        "skip_if_empty": true
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_22",
       "type": "wait",
       "label": "Wait sebelum submit",
       "params": {
@@ -322,11 +350,11 @@
       }
     },
     {
-      "id": "step_22",
+      "id": "step_23",
       "type": "click",
       "label": "Klik tombol Simpan Produk",
       "params": {
-        "selector": "#btn-simpan, .btn-save, button[type='submit']:contains('Simpan')",
+        "selector": ".submit_product_form",
         "wait_before": 500
       },
       "on_error": "stop",
@@ -336,7 +364,7 @@
       }
     },
     {
-      "id": "step_23",
+      "id": "step_24",
       "type": "wait",
       "label": "Wait loading/notification selesai",
       "params": {
@@ -356,6 +384,6 @@
     "screenshot_on_step": false,
     "log_level": "INFO"
   },
-  "created_at": "2026-07-19T22:04:46.225201",
-  "updated_at": "2026-07-19T22:05:47.579141"
+  "created_at": "2026-07-19T23:28:54.577708",
+  "updated_at": "2026-07-20T18:59:19.000000"
 }

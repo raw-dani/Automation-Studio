@@ -25,6 +25,8 @@ class Select2Action(BaseAction):
             "wait_after": 500,
             "timeout": 30000,
             "clear_first": True,
+            "skip_if_empty": False,  # Skip step jika value kosong
+            "add_new": False,        # Jika true, klik tombol add new jika opsi tidak ditemukan
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -50,11 +52,20 @@ class Select2Action(BaseAction):
         wait_after = params.get("wait_after", 500)
         timeout = params.get("timeout", 30000)
         clear_first = params.get("clear_first", True)
+        skip_if_empty = params.get("skip_if_empty", False)
+        add_new = params.get("add_new", False)
         
         # Variable substitution
         selector = self._substitute_variables(selector, context)
         search_selector = self._substitute_variables(search_selector, context)
         value = self._substitute_variables(value, context)
+        
+        # Skip jika value kosong
+        if skip_if_empty and not value:
+            return ActionResult(
+                status=ActionStatus.SKIPPED,
+                message=f"Value kosong, melewati Select2 '{selector}'",
+            )
         
         import asyncio
         
@@ -84,8 +95,55 @@ class Select2Action(BaseAction):
             await page.type(target_input, value, delay=50)
             await asyncio.sleep(0.5)
             
-            # Tekan Enter untuk memilih opsi yang cocok
-            await page.keyboard.press("Enter")
+            # Cek apakah opsi muncul di dropdown
+            option_selector = f".select2-results__option:has-text('{value}')"
+            option_exists = await page.locator(option_selector).count() > 0
+            
+            if not option_exists and add_new:
+                # Cek apakah ada tombol add new (+)
+                add_btn_selector = f"{selector} + .input-group-btn .btn-modal, {selector} .btn-modal"
+                add_btn = page.locator(add_btn_selector).first
+                
+                if await add_btn.count() > 0:
+                    # Klik tombol add new
+                    add_href = await add_btn.get_attribute("data-href")
+                    from loguru import logger
+                    logger.info(f"Option '{value}' not found, opening add new modal: {add_href}")
+                    
+                    await add_btn.click()
+                    await asyncio.sleep(1)
+                    
+                    # Coba isi modal form
+                    modal_filled = await self._fill_add_modal(page, value, timeout)
+                    if not modal_filled:
+                        return ActionResult(
+                            status=ActionStatus.FAILED,
+                            message=f"Gagal mengisi modal tambah '{value}'",
+                            error="Modal fill failed",
+                        )
+                    
+                    # Submit modal (biasanya tombol submit atau enter)
+                    await page.keyboard.press("Enter")
+                    await asyncio.sleep(1)
+                    
+                    # Tunggu opsi baru muncul dan pilih
+                    await page.wait_for_selector(option_selector, state="visible", timeout=timeout)
+                    await page.click(option_selector, timeout=timeout)
+                else:
+                    return ActionResult(
+                        status=ActionStatus.FAILED,
+                        message=f"Opsi '{value}' tidak ditemukan dan tidak ada tombol add new.",
+                        error=f"Option not found: {value}",
+                    )
+            elif not option_exists:
+                return ActionResult(
+                    status=ActionStatus.FAILED,
+                    message=f"Opsi '{value}' tidak ditemukan dalam dropdown.",
+                    error=f"Option not found: {value}",
+                )
+            else:
+                # Opsi ditemukan, klik untuk memilih
+                await page.click(option_selector, timeout=timeout)
             
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)
@@ -102,6 +160,38 @@ class Select2Action(BaseAction):
                 message=f"Gagal pilih Select2 '{selector}' dengan nilai '{value}': {str(e)}",
                 error=str(e),
             )
+    
+    async def _fill_add_modal(self, page, value: str, timeout: int = 30000) -> bool:
+        """
+        Coba isi modal tambah data baru.
+        Modal biasanya memiliki field nama/name dan tombol submit.
+        """
+        try:
+            # Tunggu modal muncul
+            await page.wait_for_selector(".modal, .view_modal", state="visible", timeout=timeout)
+            await asyncio.sleep(0.5)
+            
+            # Cari input field di modal
+            modal_input_selectors = [
+                ".modal input[name='name']",
+                ".modal input[name='title']",
+                ".modal input[type='text']",
+                ".view_modal input[name='name']",
+                ".view_modal input[type='text']",
+            ]
+            
+            for input_selector in modal_input_selectors:
+                input_field = page.locator(input_selector).first
+                if await input_field.count() > 0:
+                    await input_field.fill(value)
+                    await asyncio.sleep(0.3)
+                    return True
+            
+            return False
+            
+        except Exception as e:
+            self._log("WARNING", f"Failed to fill add modal: {e}")
+            return False
     
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:
         """Substitusi variable {{data.field}} dengan nilai dari context."""
