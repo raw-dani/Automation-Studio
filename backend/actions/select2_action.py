@@ -73,16 +73,21 @@ class Select2Action(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
-            # Determine the visible click target for Select2
-            # Select2 hides the native <select> and shows a container div
+            # Build visible Select2 click target.
+            # The native <select> is hidden by Select2; the visible trigger is
+            # usually the adjacent `.select2-container .select2-selection--single`.
+            adjacent_trigger = f"{selector} + .select2-container .select2-selection--single, {selector} + .select2-container"
             container_id = selector.replace("#", "select2-") + "-container"
-            click_target = f"#{container_id} .select2-selection--single, #{container_id}, {selector}"
+            container_trigger = f"#{container_id} .select2-selection--single, #{container_id}"
             
-            # Pastikan container Select2 terlihat
+            # Prefer adjacent container, fallback to generated container id
+            click_target = f"{adjacent_trigger}, {container_trigger}, {selector}"
+            
+            # Pastikan target terlihat
             await page.wait_for_selector(click_target, state="visible", timeout=timeout)
             
-            # Klik container untuk membuka dropdown
-            await page.click(click_target, timeout=timeout)
+            # Klik trigger visible. Use locator().last to avoid the hidden <select> when multiple elements match.
+            await page.locator(click_target).last.click(timeout=timeout)
             await asyncio.sleep(0.3)
             
             # Tentukan search input selector
