@@ -73,15 +73,20 @@ class Select2Action(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
+            # Determine the visible click target for Select2
+            # Select2 hides the native <select> and shows a container div
+            container_id = selector.replace("#", "select2-") + "-container"
+            click_target = f"#{container_id} .select2-selection--single, #{container_id}, {selector}"
+            
             # Pastikan container Select2 terlihat
-            await page.wait_for_selector(selector, state="visible", timeout=timeout)
+            await page.wait_for_selector(click_target, state="visible", timeout=timeout)
             
             # Klik container untuk membuka dropdown
-            await page.click(selector, timeout=timeout)
+            await page.click(click_target, timeout=timeout)
             await asyncio.sleep(0.3)
             
             # Tentukan search input selector
-            target_input = search_selector or f"{selector} .select2-search__field"
+            target_input = search_selector or f"#{container_id} .select2-search__field, .select2-search__field"
             
             # Tunggu search input muncul
             await page.wait_for_selector(target_input, state="visible", timeout=timeout)
@@ -101,7 +106,7 @@ class Select2Action(BaseAction):
             
             if not option_exists and add_new:
                 # Cek apakah ada tombol add new (+)
-                add_btn_selector = f"{selector} + .input-group-btn .btn-modal, {selector} .btn-modal"
+                add_btn_selector = f"#{selector.replace('#', '')} + .input-group-btn .btn-modal, #{selector.replace('#', '')} .btn-modal, .select2-container + .input-group-btn .btn-modal"
                 add_btn = page.locator(add_btn_selector).first
                 
                 if await add_btn.count() > 0:
