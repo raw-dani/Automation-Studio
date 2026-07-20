@@ -95,6 +95,8 @@ class Select2Action(BaseAction):
             await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
             await asyncio.sleep(0.2)
             
+            target_input = search_selector or ".select2-container--open .select2-search__field"
+            
             # Try direct option click first (works for small lists without search field)
             option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
             option_count = await page.locator(option_selector).count()
