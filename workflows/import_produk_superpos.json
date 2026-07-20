@@ -319,7 +319,7 @@
       "type": "input_text",
       "label": "Input Deskripsi Produk",
       "params": {
-        "selector": "#product_description",
+        "selector": "#product_description, textarea[name='product_description']",
         "value": "{{data.Deskripsi Produk}}",
         "clear_first": true,
         "skip_if_empty": true

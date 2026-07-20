@@ -72,11 +72,10 @@ class InputTextAction(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
-            # Tunggu elemen muncul dan terlihat
-            await page.wait_for_selector(play_selector, state="visible", timeout=timeout)
+            visible_selector = f"{play_selector} >> visible=true"
+            await page.wait_for_selector(visible_selector, timeout=timeout)
             
-            # Gunakan locator untuk menghindari masalah dengan multiple matching elements
-            locator = page.locator(play_selector).first
+            locator = page.locator(play_selector).filter(visible=True).first
             
             # Clear input jika diperlukan
             if clear_first:
