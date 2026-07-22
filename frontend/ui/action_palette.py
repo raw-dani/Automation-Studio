@@ -4,7 +4,7 @@ Action Palette - Sidebar berisi daftar action yang bisa didrag ke workflow edito
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
-    QGroupBox, QScrollArea, QPushButton,
+    QGroupBox, QScrollArea, QPushButton, QFrame,
 )
 from PySide6.QtCore import Qt, Signal, QSize
 from PySide6.QtGui import QFont, QDrag, QPixmap, QPainter, QColor
@@ -12,42 +12,60 @@ from PySide6.QtGui import QFont, QDrag, QPixmap, QPainter, QColor
 from backend.core.action_registry import ActionRegistry
 
 
-class ActionItem(QWidget):
-    """Widget untuk satu item action di palette."""
+class ActionItem(QFrame):
+    """Modern card-style widget untuk satu action di palette."""
     
     def __init__(self, action_name: str, description: str, parent=None):
         super().__init__(parent)
         self.action_name = action_name
         
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 4, 8, 4)
-        layout.setSpacing(2)
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setFixedHeight(64)
+        
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(10)
+        
+        # Color indicator
+        self.color_indicator = QFrame()
+        self.color_indicator.setFixedWidth(4)
+        self.color_indicator.setFixedHeight(40)
+        
+        # Text content
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+        text_layout.setContentsMargins(0, 0, 0, 0)
         
         # Action name
         name_label = QLabel(action_name)
         name_font = QFont()
         name_font.setBold(True)
+        name_font.setPointSize(10)
         name_label.setFont(name_font)
-        name_label.setStyleSheet("color: #2196F3;")
+        name_label.setStyleSheet("color: #1a1a2e;")
         
         # Description
-        desc_label = QLabel(description[:50] + ("..." if len(description) > 50 else ""))
-        desc_label.setStyleSheet("color: #666; font-size: 11px;")
+        desc_label = QLabel(description[:45] + ("..." if len(description) > 45 else ""))
+        desc_label.setStyleSheet("color: #6b7280; font-size: 10px;")
         desc_label.setWordWrap(True)
         
-        layout.addWidget(name_label)
-        layout.addWidget(desc_label)
+        text_layout.addWidget(name_label)
+        text_layout.addWidget(desc_label)
         
+        layout.addWidget(self.color_indicator)
+        layout.addLayout(text_layout, 1)
+        
+        # Modern stylesheet
         self.setStyleSheet("""
             ActionItem {
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                margin: 2px 4px;
+                background: #ffffff;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
             }
             ActionItem:hover {
-                background: #e3f2fd;
-                border-color: #2196F3;
+                background: #f8fafc;
+                border: 1px solid #3b82f6;
             }
         """)
     
@@ -62,7 +80,7 @@ class ActionItem(QWidget):
             pixmap = QPixmap(self.size())
             pixmap.fill(Qt.transparent)
             painter = QPainter(pixmap)
-            painter.setOpacity(0.8)
+            painter.setOpacity(0.85)
             self.render(painter)
             painter.end()
             drag.setPixmap(pixmap)
@@ -75,6 +93,15 @@ class ActionItem(QWidget):
         mime = QMimeData()
         mime.setText(f"action:{self.action_name}")
         return mime
+    
+    def set_color(self, color: str):
+        """Set color indicator."""
+        self.color_indicator.setStyleSheet(f"""
+            QFrame {{
+                background: {color};
+                border-radius: 2px;
+            }}
+        """)
 
 
 class ActionPalette(QWidget):
@@ -88,55 +115,93 @@ class ActionPalette(QWidget):
         super().__init__(parent)
         self.action_registry = action_registry
         self.setWindowTitle("Actions")
+        self.setMinimumWidth(200)
         
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
         
-        # Title
-        title = QLabel("Action Palette")
+        # Title with modern styling
+        title_container = QFrame()
+        title_layout = QHBoxLayout(title_container)
+        title_layout.setContentsMargins(4, 0, 4, 0)
+        title_layout.setSpacing(8)
+        
+        title = QLabel("Actions")
         title_font = QFont()
         title_font.setBold(True)
-        title_font.setPointSize(12)
+        title_font.setPointSize(11)
         title.setFont(title_font)
-        title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #333; padding: 8px;")
-        layout.addWidget(title)
+        title.setStyleSheet("color: #1a1a2e;")
         
-        # Group by category
-        self._create_action_groups(layout)
+        title_layout.addWidget(title)
+        title_layout.addStretch()
+        layout.addWidget(title_container)
+        
+        # Scroll area for actions
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        
+        self.actions_widget = QWidget()
+        self.actions_layout = QVBoxLayout(self.actions_widget)
+        self.actions_layout.setContentsMargins(0, 0, 0, 0)
+        self.actions_layout.setSpacing(6)
+        
+        scroll.setWidget(self.actions_widget)
+        layout.addWidget(scroll)
         
         # Reorder controls
-        reorder_layout = QHBoxLayout()
+        reorder_container = QFrame()
+        reorder_layout = QHBoxLayout(reorder_container)
+        reorder_layout.setContentsMargins(0, 4, 0, 0)
+        reorder_layout.setSpacing(6)
         
-        self.move_up_btn = QPushButton("Up")
+        self.move_up_btn = QPushButton("↑ Up")
+        self.move_up_btn.setFixedHeight(32)
         self.move_up_btn.setStyleSheet("""
             QPushButton {
-                background: #FF9800; color: white; padding: 6px;
-                border-radius: 4px; font-weight: bold;
+                background: #f3f4f6;
+                color: #374151;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-weight: 500;
+                font-size: 11px;
+                border: 1px solid #d1d5db;
             }
-            QPushButton:hover { background: #F57C00; }
-            QPushButton:disabled { background: #ccc; }
+            QPushButton:hover { background: #e5e7eb; }
+            QPushButton:pressed { background: #d1d5db; }
+            QPushButton:disabled { background: #f9fafb; color: #9ca3af; border-color: #e5e7eb; }
         """)
         self.move_up_btn.clicked.connect(lambda: self.node_moved_up.emit())
         reorder_layout.addWidget(self.move_up_btn)
         
-        self.move_down_btn = QPushButton("Down")
+        self.move_down_btn = QPushButton("↓ Down")
+        self.move_down_btn.setFixedHeight(32)
         self.move_down_btn.setStyleSheet("""
             QPushButton {
-                background: #2196F3; color: white; padding: 6px;
-                border-radius: 4px; font-weight: bold;
+                background: #f3f4f6;
+                color: #374151;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-weight: 500;
+                font-size: 11px;
+                border: 1px solid #d1d5db;
             }
-            QPushButton:hover { background: #1976D2; }
-            QPushButton:disabled { background: #ccc; }
+            QPushButton:hover { background: #e5e7eb; }
+            QPushButton:pressed { background: #d1d5db; }
+            QPushButton:disabled { background: #f9fafb; color: #9ca3af; border-color: #e5e7eb; }
         """)
         self.move_down_btn.clicked.connect(lambda: self.node_moved_down.emit())
         reorder_layout.addWidget(self.move_down_btn)
         
-        layout.addLayout(reorder_layout)
-        layout.addStretch()
+        layout.addWidget(reorder_container)
+        
+        # Populate actions
+        self._create_action_groups()
     
-    def _create_action_groups(self, layout):
+    def _create_action_groups(self):
         """Buat grup untuk setiap kategori action."""
         categories = {
             "Navigation": ["click", "wait", "navigate"],
@@ -144,21 +209,35 @@ class ActionPalette(QWidget):
             "Logic": ["loop", "if_else"],
         }
         
+        # Category colors
+        category_colors = {
+            "Navigation": "#3b82f6",
+            "Input": "#8b5cf6",
+            "Logic": "#f59e0b",
+        }
+        
         for category, action_names in categories.items():
-            group = QGroupBox(category)
-            group_layout = QVBoxLayout(group)
-            group_layout.setContentsMargins(4, 8, 4, 4)
-            group_layout.setSpacing(4)
+            # Category label
+            category_label = QLabel(category)
+            category_label.setFont(QFont("Segoe UI", 9, QFont.Bold))
+            category_label.setStyleSheet(f"""
+                color: {category_colors.get(category, '#6b7280')};
+                padding: 4px 8px;
+                margin-top: 4px;
+            """)
+            self.actions_layout.addWidget(category_label)
             
+            # Action items
             for action_name in action_names:
                 action = self.action_registry.get(action_name)
                 if action:
                     item = ActionItem(action.name, action.description)
+                    item.set_color(category_colors.get(category, "#6b7280"))
                     item.mousePressEvent = lambda e, a=action: self._on_action_click(e, a)
-                    group_layout.addWidget(item)
+                    self.actions_layout.addWidget(item)
             
-            group_layout.addStretch()
-            layout.addWidget(group)
+            # Add spacing between categories
+            self.actions_layout.addSpacing(6)
     
     def _on_action_click(self, event, action):
         """Handle klik pada action item."""
