@@ -1,5 +1,5 @@
 {
-  "id": "workflow_1962686e",
+  "id": "workflow_5167e2c8",
   "name": "My Workflow",
   "version": "1.0",
   "url": "http://superpos.local/public/login",
@@ -78,20 +78,6 @@
         "selector": "body > div.tour-backdrop.bottom",
         "timeout": 15000,
         "wait_type": "until_hidden"
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_6",
-      "type": "wait",
-      "label": "Wait sebelum navigasi ke produk",
-      "params": {
-        "wait_type": "fixed",
-        "time": 2000
       },
       "on_error": "stop",
       "retry": {
@@ -379,6 +365,6 @@
     "screenshot_on_step": false,
     "log_level": "INFO"
   },
-  "created_at": "2026-07-20T20:37:56.349176",
-  "updated_at": "2026-07-20T20:38:51.796290"
+  "created_at": "2026-07-23T22:22:07.743255",
+  "updated_at": "2026-07-24T19:31:27.513855"
 }
