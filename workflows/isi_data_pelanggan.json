@@ -1,0 +1,347 @@
+{
+  "id": "workflow_386063e8",
+  "name": "My Workflow",
+  "version": "1.0",
+  "url": "",
+  "data_source": {
+    "config": {
+      "file_path": "data/pelanggan demo.xlsx",
+      "sheet": "Sheet1"
+    },
+    "type": "excel"
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "wait",
+      "label": "Wait halaman siap",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "body",
+        "timeout": 15000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "navigate",
+      "label": "Buka menu Pelanggan / Kontak",
+      "params": {
+        "selector": "#menu-pelanggan, a[href*='contact'], .nav-contact",
+        "url": "http://superpos.local/public/contacts?type=customer",
+        "wait_before": 1000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "loop",
+      "label": "Loop setiap baris data pelanggan dari Excel",
+      "params": {
+        "loop_type": "data_source",
+        "data_source": "pelanggan",
+        "on_error": "skip"
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      },
+      "steps": [
+        {
+          "id": "step_3",
+          "type": "click",
+          "label": "Klik tombol Tambah Pelanggan Baru",
+          "params": {
+            "selector": "//*[@id=\"scrollable-container\"]/section[2]/div[2]/div/div[1]/div/a",
+            "selector_type": "xpath",
+            "timeout": 10000,
+            "wait_after": 0,
+            "wait_before": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_4",
+          "type": "wait",
+          "label": "Wait form pelanggan dimuat",
+          "params": {
+            "duration": 1000,
+            "selector": "#form-pelanggan, .contact-form, #contact_add_form",
+            "timeout": 10000,
+            "wait_after": 0,
+            "wait_before": 0,
+            "wait_type": "until_visible"
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_form_group",
+          "type": "parallel_group",
+          "label": "Isi semua field pelanggan secara bersamaan",
+          "params": {
+            "on_error": "stop",
+            "timeout": 15000,
+            "stagger_delay": 100
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          },
+          "steps": [
+            {
+              "id": "step_6",
+              "type": "select_dropdown",
+              "label": "Pilih Jenis Kontak",
+              "params": {
+                "select_by": "value",
+                "select_value": "{{data.Jenis Kontak}}",
+                "selector": "#contact_type",
+                "selector_type": "css",
+                "timeout": 10000,
+                "wait_after": 0,
+                "wait_before": 0
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_7",
+              "type": "radio_select",
+              "label": "Pilih Tipe",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "select_by": "label",
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 10000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_8",
+              "type": "input_text",
+              "label": "Input ID Kontak",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "clear_first": true,
+                "type_delay": 50,
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 30000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_9",
+              "type": "select_dropdown",
+              "label": "Pilih Grup Pelanggan",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "select_by": "label",
+                "select_value": "",
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 10000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_10",
+              "type": "input_text",
+              "label": "Input No. Mobile",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "clear_first": true,
+                "type_delay": 50,
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 30000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_11",
+              "type": "input_text",
+              "label": "Input No. Kontak Alternatif",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "clear_first": true,
+                "type_delay": 50,
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 30000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_12",
+              "type": "input_text",
+              "label": "Input Telepon Rumah",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "clear_first": true,
+                "type_delay": 50,
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 30000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_13",
+              "type": "input_text",
+              "label": "Input Email",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "value": "",
+                "clear_first": true,
+                "type_delay": 50,
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 30000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            },
+            {
+              "id": "step_14",
+              "type": "select_dropdown",
+              "label": "Pilih Ditugaskan Kepada",
+              "params": {
+                "selector": "",
+                "selector_type": "css",
+                "select_by": "label",
+                "select_value": "",
+                "wait_before": 0,
+                "wait_after": 0,
+                "timeout": 10000
+              },
+              "on_error": "skip",
+              "retry": {
+                "max_retries": 3,
+                "delay": 2000
+              }
+            }
+          ]
+        },
+        {
+          "id": "step_15",
+          "type": "wait",
+          "label": "Wait sebelum submit",
+          "params": {
+            "duration": 500,
+            "timeout": 10000,
+            "wait_after": 0,
+            "wait_before": 0,
+            "wait_type": "fixed"
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_16",
+          "type": "click",
+          "label": "Klik tombol Simpan",
+          "params": {
+            "selector": "#contact_add_form > div.modal-footer > button.tw-dw-btn.tw-dw-btn-primary.tw-text-white, #btn-simpan, .btn-save, button[type='submit'], .submit-contact-form",
+            "wait_before": 0,
+            "wait_after": 0,
+            "timeout": 10000
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_17",
+          "type": "wait",
+          "label": "Wait notifikasi / loading selesai",
+          "params": {
+            "wait_type": "until_hidden",
+            "selector": ".loading, .spinner, .modal-backdrop, .overlay",
+            "timeout": 10000,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        }
+      ]
+    }
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "created_at": "2026-07-26T12:16:18.349147",
+  "updated_at": "2026-07-27T00:03:46.897270"
+}

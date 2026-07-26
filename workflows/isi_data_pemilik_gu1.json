@@ -1,8 +1,8 @@
 {
   "id": "workflow_isi_data_pemilik_gu1",
-  "name": "Isi Data Pemilik - LAYOUT GU 1",
-  "version": "1.0",
-  "description": "Workflow untuk mengisi data pemilik/hak dari file LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
+  "name": "Isi Data Pemilik - LAYOUT GU 1 (Optimized)",
+  "version": "2.0",
+  "description": "Workflow untuk mengisi data pemilik/hak dari file LAYOUT MELENGKAPI BERKAS GU 1.xlsx - Dengan parallel group execution untuk performa lebih cepat",
   "data_source": {
     "type": "excel",
     "config": {
@@ -41,7 +41,7 @@
       "id": "step_3",
       "type": "wait",
       "label": "Wait sebelum input",
-      "params": {"wait_type": "fixed", "time": 1500}
+      "params": {"wait_type": "fixed", "duration": 1500}
     },
     {
       "id": "step_4",
@@ -54,71 +54,97 @@
     },
     {
       "id": "step_5",
-      "type": "input_text",
-      "label": "Input Nama Pemilik",
+      "type": "parallel_group",
+      "label": "Isi semua field form secara bersamaan",
       "params": {
-        "selector": "#nama",
-        "value": "{{data.NAMA}}",
-        "clear_first": true
-      }
+        "timeout": 30000,
+        "on_error": "skip"
+      },
+      "steps": [
+        {
+          "id": "step_5a",
+          "type": "input_text",
+          "label": "Input Nama Pemilik",
+          "params": {
+            "selector": "#nama",
+            "value": "{{data.NAMA}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          }
+        },
+        {
+          "id": "step_5b",
+          "type": "input_text",
+          "label": "Input NIK",
+          "params": {
+            "selector": "#nik",
+            "value": "{{data.NIK}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          }
+        },
+        {
+          "id": "step_5c",
+          "type": "input_text",
+          "label": "Input Alamat",
+          "params": {
+            "selector": "#alamat",
+            "value": "{{data.ALAMAT}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          }
+        },
+        {
+          "id": "step_5d",
+          "type": "input_text",
+          "label": "Input Tempat Lahir",
+          "params": {
+            "selector": "#tempat_lahir",
+            "value": "{{data.TEMPAT LAHIR}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          }
+        },
+        {
+          "id": "step_5e",
+          "type": "select_dropdown",
+          "label": "Pilih Status Pemilik",
+          "params": {
+            "selector": "#status",
+            "select_by": "label",
+            "select_value": "{{data.STATUS}}",
+            "wait_before": 0,
+            "wait_after": 0
+          }
+        }
+      ]
     },
     {
       "id": "step_6",
-      "type": "input_text",
-      "label": "Input NIK",
-      "params": {
-        "selector": "#nik",
-        "value": "{{data.NIK}}",
-        "clear_first": true
-      }
+      "type": "wait",
+      "label": "Wait sebelum submit",
+      "params": {"wait_type": "fixed", "duration": 1000}
     },
     {
       "id": "step_7",
-      "type": "input_text",
-      "label": "Input Alamat",
-      "params": {
-        "selector": "#alamat",
-        "value": "{{data.ALAMAT}}",
-        "clear_first": true
-      }
-    },
-    {
-      "id": "step_8",
-      "type": "input_text",
-      "label": "Input Tempat Lahir",
-      "params": {
-        "selector": "#tempat_lahir",
-        "value": "{{data.TEMPAT LAHIR}}",
-        "clear_first": true
-      }
-    },
-    {
-      "id": "step_9",
-      "type": "select_dropdown",
-      "label": "Pilih Status Pemilik",
-      "params": {
-        "selector": "#status",
-        "select_by": "label",
-        "select_value": "{{data.STATUS}}"
-      }
-    },
-    {
-      "id": "step_10",
-      "type": "wait",
-      "label": "Wait sebelum submit",
-      "params": {"wait_type": "fixed", "time": 1000}
-    },
-    {
-      "id": "step_11",
       "type": "click",
       "label": "Klik tombol Simpan",
       "params": {
         "selector": "#btn-simpan",
-        "wait_before": 500
+        "wait_before": 0,
+        "wait_after": 500
       }
     },
     {
-      "id": "step_12",
+      "id": "step_8",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {

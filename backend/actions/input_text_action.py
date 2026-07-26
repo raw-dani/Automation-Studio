@@ -20,8 +20,9 @@ class InputTextAction(BaseAction):
             "value": "",
             "clear_first": True,     # Clear input sebelum mengetik
             "type_delay": 50,        # ms delay between keystrokes
-            "wait_before": 500,
-            "wait_after": 500,
+            "use_fill": False,       # Jika True, gunakan fill() langsung tanpa type() delay
+            "wait_before": 0,        # Dikurangi dari 500ms untuk performa
+            "wait_after": 0,         # Dikurangi dari 500ms untuk performa
             "timeout": 30000,
             "skip_if_empty": False,  # Skip step jika value kosong
         }
@@ -46,11 +47,22 @@ class InputTextAction(BaseAction):
         selector_type = params.get("selector_type", "css")
         value = params.get("value", "")
         clear_first = params.get("clear_first", True)
-        type_delay = params.get("type_delay", 50)
-        wait_before = params.get("wait_before", 500)
-        wait_after = params.get("wait_after", 500)
-        timeout = params.get("timeout", 30000)
+        type_delay = params.get("type_delay", 0)
+        use_fill = params.get("use_fill", False)
+        wait_before = params.get("wait_before", 0)
+        wait_after = params.get("wait_after", 0)
+        timeout = params.get("timeout", 10000)
         skip_if_empty = params.get("skip_if_empty", False)
+        
+        # Performance config
+        perf = context.config.get("performance", {})
+        perf_mode = perf.get("mode", "normal")
+        if perf_mode in ("turbo", "bulk"):
+            wait_before = min(wait_before, perf.get(perf_mode, {}).get("wait_before_default", 0))
+            wait_after = min(wait_after, perf.get(perf_mode, {}).get("wait_after_default", 0))
+            timeout = min(timeout, perf.get(perf_mode, {}).get("parallel_group_timeout", 30000))
+            if perf.get(perf_mode, {}).get("use_fill", False):
+                use_fill = True
         
         # Variable substitution
         selector = self._substitute_variables(selector, context)
@@ -77,15 +89,19 @@ class InputTextAction(BaseAction):
             
             locator = page.locator(play_selector).filter(visible=True).first
             
-            # Clear input jika diperlukan
-            if clear_first:
-                await locator.fill("")
-            
-            # Type text dengan delay (simulasi ketikan manusia)
-            if type_delay > 0:
-                await locator.type(value, delay=type_delay)
-            else:
+            # Type text - use_fill untuk performa maksimal (langsung isi tanpa simulasi)
+            # fill() sudah otomatis replace seluruh nilai, tidak perlu clear_first terpisah
+            if use_fill:
                 await locator.fill(value)
+            else:
+                # Clear input jika diperlukan (hanya untuk mode type simulation)
+                if clear_first:
+                    await locator.fill("")
+                
+                if type_delay > 0:
+                    await locator.type(value, delay=type_delay)
+                else:
+                    await locator.fill(value)
             
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)

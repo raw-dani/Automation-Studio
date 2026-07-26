@@ -17,8 +17,8 @@ class ClickAction(BaseAction):
         return {
             "selector": "",
             "selector_type": "css",  # css, xpath, text
-            "wait_before": 500,      # ms
-            "wait_after": 500,       # ms
+            "wait_before": 0,        # ms (dikurangi dari 500ms untuk performa)
+            "wait_after": 0,         # ms (dikurangi dari 500ms untuk performa)
             "force": False,          # force click even if not visible
             "timeout": 30000,        # ms
         }
@@ -41,10 +41,18 @@ class ClickAction(BaseAction):
         
         selector = params.get("selector", "")
         selector_type = params.get("selector_type", "css")
-        wait_before = params.get("wait_before", 500)
-        wait_after = params.get("wait_after", 500)
+        wait_before = params.get("wait_before", 0)
+        wait_after = params.get("wait_after", 0)
         force = params.get("force", False)
-        timeout = params.get("timeout", 30000)
+        timeout = params.get("timeout", 10000)
+        
+        # Performance config
+        perf = context.config.get("performance", {})
+        perf_mode = perf.get("mode", "normal")
+        if perf_mode in ("turbo", "bulk"):
+            wait_before = min(wait_before, perf.get(perf_mode, {}).get("wait_before_default", 0))
+            wait_after = min(wait_after, perf.get(perf_mode, {}).get("wait_after_default", 0))
+            timeout = min(timeout, perf.get(perf_mode, {}).get("parallel_group_timeout", 30000))
         
         # Variable substitution
         selector = self._substitute_variables(selector, context)
@@ -61,6 +69,9 @@ class ClickAction(BaseAction):
         try:
             # Tunggu elemen muncul
             await page.wait_for_selector(play_selector, timeout=timeout)
+            
+            # Tutup modal overlay yang mungkin menghalangi klik
+            await self._dismiss_modal(page)
             
             # Klik elemen
             await page.click(play_selector, force=force, timeout=timeout)
@@ -90,7 +101,27 @@ class ClickAction(BaseAction):
             return f"text={selector}"
         else:  # css
             return selector
-    
+
+    async def _dismiss_modal(self, page):
+        """Tutup modal overlay yang mungkin menghalangi klik."""
+        try:
+            dismissors = [
+                ".modal.show .btn-close",
+                ".modal.show .close",
+                ".modal.in .btn-close",
+                ".modal.in .close",
+            ]
+            for sel in dismissors:
+                elements = await page.query_selector_all(sel)
+                for el in elements:
+                    visible = await el.is_visible()
+                    if visible:
+                        await el.click(force=True, timeout=1000)
+                        await asyncio.sleep(0.1)
+                        break
+        except Exception:
+            pass
+
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:
         """Substitusi variable {{data.field}} dengan nilai dari context."""
         if "{{" not in text:

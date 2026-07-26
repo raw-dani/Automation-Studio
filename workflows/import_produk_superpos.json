@@ -1,8 +1,9 @@
 {
-  "id": "workflow_5167e2c8",
-  "name": "My Workflow",
-  "version": "1.0",
-  "url": "http://superpos.local/public/login",
+  "id": "workflow_739e8c09",
+  "name": "My Workflow (Optimized)",
+  "version": "2.0",
+  "description": "Import produk dengan parallel group execution untuk performa lebih cepat",
+  "url": "https://skb.atrbpn.go.id",
   "data_source": {
     "config": {
       "file_path": "data/Dummy_Import_Produk (1).xlsx",
@@ -10,15 +11,20 @@
     },
     "type": "excel"
   },
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
   "steps": [
     {
       "id": "step_1",
       "type": "wait",
       "label": "Wait halaman login siap",
       "params": {
-        "wait_type": "until_visible",
         "selector": "body",
-        "timeout": 15000
+        "timeout": 15,
+        "wait_type": "until_visible"
       },
       "on_error": "stop",
       "retry": {
@@ -27,42 +33,59 @@
       }
     },
     {
-      "id": "step_2",
-      "type": "input_text",
-      "label": "Input Username",
+      "id": "step_login_group",
+      "type": "parallel_group",
+      "label": "Isi Username & Password bersamaan",
       "params": {
-        "clear_first": true,
-        "selector": "#username, input[name='username'], input[type='email']",
-        "value": "rohmat"
+        "timeout": 30000,
+        "on_error": "stop"
       },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_3",
-      "type": "input_text",
-      "label": "Input Password",
-      "params": {
-        "clear_first": true,
-        "selector": "#password, input[name='password'], input[type='password']",
-        "value": "Raw!@#123"
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
+      "steps": [
+        {
+          "id": "step_2",
+          "type": "input_text",
+          "label": "Username",
+          "params": {
+            "clear_first": true,
+            "selector": "#username, input[name='username'], input[type='email']",
+            "value": "nurulkhabibatul",
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_3",
+          "type": "input_text",
+          "label": "Password",
+          "params": {
+            "clear_first": true,
+            "selector": "#password, input[name='password'], input[type='password']",
+            "value": "Bibah123",
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        }
+      ]
     },
     {
       "id": "step_4",
       "type": "click",
       "label": "Klik tombol Login",
       "params": {
-        "selector": "button[type='submit'], input[type='submit'], .btn-login",
-        "wait_before": 1000
+        "selector": "#kc-next",
+        "wait_before": 500
       },
       "on_error": "stop",
       "retry": {
@@ -91,7 +114,7 @@
       "label": "Navigasi ke menu Produk",
       "params": {
         "selector": "#tour_step5 > svg.svg.tw-ml-auto.tw-text-gray-500.tw-size-4.tw-shrink-0",
-        "wait_before": 1000
+        "wait_before": 500
       },
       "on_error": "stop",
       "retry": {
@@ -142,179 +165,201 @@
       }
     },
     {
-      "id": "step_11",
-      "type": "input_text",
-      "label": "Input Nama Produk",
+      "id": "step_form_group",
+      "type": "parallel_group",
+      "label": "Isi semua field produk secara bersamaan",
       "params": {
-        "selector": "#name, input[name='name']",
-        "value": "{{data.Nama Produk}}",
-        "clear_first": true,
-        "skip_if_empty": true
+        "timeout": 30000,
+        "on_error": "skip"
       },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_12",
-      "type": "select2",
-      "label": "Pilih Jenis Barcode",
-      "params": {
-        "selector": "#barcode_type",
-        "value": "{{data.Jenis Barcode}}",
-        "add_new": false,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_13",
-      "type": "input_text",
-      "label": "Input SKU",
-      "params": {
-        "selector": "#sku",
-        "value": "{{data.SKU}}",
-        "clear_first": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_14",
-      "type": "select2",
-      "label": "Pilih Merek",
-      "params": {
-        "selector": "#brand_id",
-        "value": "{{data.Merek}}",
-        "add_new": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_15",
-      "type": "select2",
-      "label": "Pilih Kategori",
-      "params": {
-        "selector": "#category_id",
-        "value": "{{data.Kategori}}",
-        "add_new": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_16",
-      "type": "select2",
-      "label": "Pilih Unit",
-      "params": {
-        "selector": "#unit_id",
-        "value": "{{data.Unit}}",
-        "add_new": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_17",
-      "type": "input_text",
-      "label": "Input Harga Pembelian",
-      "params": {
-        "selector": "#single_dpp, #single_dpp_inc_tax",
-        "value": "{{data.Harga Pembelian (Termasuk Pajak)}}",
-        "clear_first": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_18",
-      "type": "input_text",
-      "label": "Input Harga Jual",
-      "params": {
-        "selector": "#single_dsp, #single_dsp_inc_tax",
-        "value": "{{data.Harga penjualan}}",
-        "clear_first": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_19",
-      "type": "input_text",
-      "label": "Input Stok Awal",
-      "params": {
-        "selector": "#opening_stock_button",
-        "value": "",
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_20",
-      "type": "input_text",
-      "label": "Input Berat",
-      "params": {
-        "selector": "#weight",
-        "value": "{{data.Berat}}",
-        "clear_first": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_21",
-      "type": "input_text",
-      "label": "Input Deskripsi Produk",
-      "params": {
-        "selector": "#product_description, textarea[name='product_description']",
-        "value": "{{data.Deskripsi Produk}}",
-        "clear_first": true,
-        "skip_if_empty": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
+      "steps": [
+        {
+          "id": "step_11",
+          "type": "input_text",
+          "label": "Input Nama Produk",
+          "params": {
+            "selector": "#name, input[name='name']",
+            "value": "{{data.Nama Produk}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_12",
+          "type": "select2",
+          "label": "Pilih Jenis Barcode",
+          "params": {
+            "selector": "#barcode_type",
+            "value": "{{data.Jenis Barcode}}",
+            "add_new": false,
+            "skip_if_empty": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13",
+          "type": "input_text",
+          "label": "Input SKU",
+          "params": {
+            "selector": "#sku",
+            "value": "{{data.SKU}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_14",
+          "type": "select2",
+          "label": "Pilih Merek",
+          "params": {
+            "selector": "#brand_id",
+            "value": "{{data.Merek}}",
+            "add_new": true,
+            "skip_if_empty": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_15",
+          "type": "select2",
+          "label": "Pilih Kategori",
+          "params": {
+            "selector": "#category_id",
+            "value": "{{data.Kategori}}",
+            "add_new": true,
+            "skip_if_empty": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_16",
+          "type": "select2",
+          "label": "Pilih Unit",
+          "params": {
+            "selector": "#unit_id",
+            "value": "{{data.Unit}}",
+            "add_new": true,
+            "skip_if_empty": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_17",
+          "type": "input_text",
+          "label": "Input Harga Pembelian",
+          "params": {
+            "selector": "#single_dpp, #single_dpp_inc_tax",
+            "value": "{{data.Harga Pembelian (Termasuk Pajak)}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_18",
+          "type": "input_text",
+          "label": "Input Harga Jual",
+          "params": {
+            "selector": "#single_dsp, #single_dsp_inc_tax",
+            "value": "{{data.Harga penjualan}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_20",
+          "type": "input_text",
+          "label": "Input Berat",
+          "params": {
+            "selector": "#weight",
+            "value": "{{data.Berat}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_21",
+          "type": "input_text",
+          "label": "Input Deskripsi Produk",
+          "params": {
+            "selector": "#product_description, textarea[name='product_description']",
+            "value": "{{data.Deskripsi Produk}}",
+            "clear_first": true,
+            "skip_if_empty": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "skip",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        }
+      ]
     },
     {
       "id": "step_22",
@@ -322,7 +367,7 @@
       "label": "Wait sebelum submit",
       "params": {
         "wait_type": "fixed",
-        "time": 1000
+        "duration": 500
       },
       "on_error": "stop",
       "retry": {
@@ -336,7 +381,7 @@
       "label": "Klik tombol Simpan Produk",
       "params": {
         "selector": ".submit_product_form",
-        "wait_before": 500
+        "wait_before": 0
       },
       "on_error": "stop",
       "retry": {
@@ -359,12 +404,5 @@
         "delay": 2000
       }
     }
-  ],
-  "monitoring": {
-    "screenshot_on_error": true,
-    "screenshot_on_step": false,
-    "log_level": "INFO"
-  },
-  "created_at": "2026-07-23T22:22:07.743255",
-  "updated_at": "2026-07-24T19:31:27.513855"
+  ]
 }

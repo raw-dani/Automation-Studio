@@ -35,6 +35,7 @@ from backend.actions.if_else_action import IfElseAction
 from backend.actions.navigate_action import NavigateAction
 from backend.actions.select_action import SelectAction
 from backend.actions.select2_action import Select2Action
+from backend.actions.radio_select_action import RadioSelectAction
 
 
 def create_app(config: dict = None) -> FastAPI:
@@ -49,6 +50,7 @@ def create_app(config: dict = None) -> FastAPI:
     action_registry.register(SelectDropdownAction())
     action_registry.register(SelectAction())
     action_registry.register(Select2Action())
+    action_registry.register(RadioSelectAction())
     action_registry.register(UploadFileAction())
     action_registry.register(LoopAction())
     action_registry.register(IfElseAction())

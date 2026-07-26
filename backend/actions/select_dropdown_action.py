@@ -19,8 +19,8 @@ class SelectDropdownAction(BaseAction):
             "selector_type": "css",
             "select_by": "label",     # label, value, index
             "select_value": "",
-            "wait_before": 500,
-            "wait_after": 500,
+            "wait_before": 0,         # ms (dikurangi dari 500ms untuk performa)
+            "wait_after": 0,          # ms (dikurangi dari 500ms untuk performa)
             "timeout": 30000,
         }
     
@@ -46,9 +46,17 @@ class SelectDropdownAction(BaseAction):
         selector_type = params.get("selector_type", "css")
         select_by = params.get("select_by", "label")
         select_value = params.get("select_value", "")
-        wait_before = params.get("wait_before", 500)
-        wait_after = params.get("wait_after", 500)
-        timeout = params.get("timeout", 30000)
+        wait_before = params.get("wait_before", 0)
+        wait_after = params.get("wait_after", 0)
+        timeout = params.get("timeout", 10000)
+        
+        # Performance config
+        perf = context.config.get("performance", {})
+        perf_mode = perf.get("mode", "normal")
+        if perf_mode in ("turbo", "bulk"):
+            wait_before = min(wait_before, perf.get(perf_mode, {}).get("wait_before_default", 0))
+            wait_after = min(wait_after, perf.get(perf_mode, {}).get("wait_after_default", 0))
+            timeout = min(timeout, perf.get(perf_mode, {}).get("parallel_group_timeout", 30000))
         
         # Variable substitution
         selector = self._substitute_variables(selector, context)
@@ -62,15 +70,19 @@ class SelectDropdownAction(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
-            await page.wait_for_selector(play_selector, timeout=timeout)
+            play_selector = self._convert_selector(selector, selector_type)
+            
+            # Wait for selector with visibility check
+            visible_selector = f"{play_selector} >> visible=true"
+            await page.wait_for_selector(visible_selector, timeout=timeout)
             
             # Select berdasarkan metode
             if select_by == "label":
-                await page.select_option(play_selector, label=select_value)
+                await page.select_option(visible_selector, label=select_value)
             elif select_by == "value":
-                await page.select_option(play_selector, value=select_value)
+                await page.select_option(visible_selector, value=select_value)
             elif select_by == "index":
-                await page.select_option(play_selector, index=int(select_value))
+                await page.select_option(visible_selector, index=int(select_value))
             
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)

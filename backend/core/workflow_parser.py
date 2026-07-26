@@ -23,7 +23,7 @@ class WorkflowStep:
     params: dict = field(default_factory=dict)
     on_error: str = "stop"  # stop, skip, retry
     retry: dict = field(default_factory=lambda: {"max_retries": 3, "delay": 2000})
-    children: list = field(default_factory=list)  # Untuk if_else, loop
+    children: list = field(default_factory=list)  # Untuk if_else, loop, parallel_group
 
 
 @dataclass
@@ -55,8 +55,8 @@ class WorkflowParser:
     """
     
     VALID_ACTIONS = {
-        "click", "input_text", "select", "select_dropdown", "select2",
-        "wait", "upload_file", "loop", "if_else", "navigate"
+        "click", "input_text", "select", "select_dropdown", "select2", "radio_select",
+        "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
     }
     
     VALID_ON_ERROR = {"stop", "skip", "retry"}
@@ -126,7 +126,7 @@ class WorkflowParser:
         self._validate_step(data)
         
         children = []
-        if data["type"] in ("if_else", "loop"):
+        if data["type"] in ("if_else", "loop", "parallel_group"):
             for child_data in data.get("then", []) + data.get("else", []) + data.get("steps", []):
                 children.append(self._parse_step(child_data))
         
@@ -215,9 +215,9 @@ class WorkflowParser:
                 "id": step.id,
                 "type": step.type,
                 "label": step.label,
-                "params": step.params,
+                "params": dict(step.params),
                 "on_error": step.on_error,
-                "retry": step.retry,
+                "retry": dict(step.retry),
             }
             if step.children:
                 step_dict["steps"] = self._steps_to_dict(step.children)
@@ -255,3 +255,4 @@ class WorkflowParser:
                     pass  # Skip file yang corrupt
         
         return workflows
+

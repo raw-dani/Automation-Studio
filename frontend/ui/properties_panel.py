@@ -1,34 +1,420 @@
 """
 Properties Panel - Panel untuk mengkonfigurasi parameter action yang dipilih.
+Mendukung penuh parallel_group dengan tampilan child steps di dalamnya.
 """
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QScrollArea, QFormLayout, QComboBox,
-    QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox,
+    QSpinBox, QDoubleSpinBox, QCheckBox, QGroupBox, QFrame,
+    QListWidget, QListWidgetItem,
 )
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
+
+
+# Color scheme for action types (mirror dari workflow_editor)
+ACTION_COLORS = {
+    "click": "#2196F3",
+    "input_text": "#9C27B0",
+    "select": "#00BCD4",
+    "select2": "#00BCD4",
+    "select_dropdown": "#FF9800",
+    "radio_select": "#FF5722",
+    "upload_file": "#4CAF50",
+    "wait": "#FFC107",
+    "loop": "#FF5722",
+    "if_else": "#3F51B5",
+    "parallel_group": "#009688",
+    "navigate": "#9C27B0",
+    "default": "#607D8B",
+}
+
+
+class ChildStepItem(QFrame):
+    """Widget untuk menampilkan satu child step di dalam parallel_group."""
+
+    edit_clicked = Signal(int)  # index
+    remove_clicked = Signal(int)  # index
+    move_up_clicked = Signal(int)  # index
+    move_down_clicked = Signal(int)  # index
+    params_edited = Signal(int, dict)  # index, updated_child_dict
+    save_requested = Signal(int)  # index - explicit save from inline edit
+    cancel_requested = Signal(int)  # index
+
+    def __init__(self, step_id: str, action_type: str, label: str, params: dict, index: int, parent=None):
+        super().__init__(parent)
+        self.step_id = step_id
+        self.action_type = action_type
+        self.step_index = index
+        self._child_data = {
+            "id": step_id,
+            "type": action_type,
+            "label": label,
+            "params": dict(params),
+        }
+
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setFixedHeight(64)
+        self.setStyleSheet("""
+            ChildStepItem {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                margin: 2px 0px;
+            }
+            ChildStepItem:hover {
+                background: #f1f5f9;
+                border: 1px solid #009688;
+            }
+            ChildStepItem[editing="true"] {
+                background: #fffde7;
+                border: 2px solid #009688;
+            }
+        """)
+        self.setProperty("editing", "false")
+
+        # Main layout
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(10, 6, 6, 6)
+        self.main_layout.setSpacing(4)
+
+        # Build view mode
+        self._view_widget = QWidget()
+        self._build_view_mode()
+        self.main_layout.addWidget(self._view_widget)
+
+        # Build edit mode (hidden by default)
+        self._edit_widget = QWidget()
+        self._edit_widget.setStyleSheet("background: #fffde7; border: 1px solid #009688; border-radius: 4px;")
+        self._build_edit_mode()
+        self._edit_widget.hide()
+        self.main_layout.addWidget(self._edit_widget)
+
+        self._apply_view_data()
+
+    def _border_color(self):
+        return ACTION_COLORS.get(self.action_type, ACTION_COLORS["default"])
+
+    def _build_view_mode(self):
+        layout = QHBoxLayout(self._view_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(6)
+
+        border_color = self._border_color()
+
+        color_indicator = QFrame()
+        color_indicator.setFixedWidth(4)
+        color_indicator.setFixedHeight(48)
+        color_indicator.setStyleSheet(f"""
+            QFrame {{
+                background: {border_color};
+                border-radius: 2px;
+            }}
+        """)
+        layout.addWidget(color_indicator)
+
+        index_label = QLabel(f"#{self.step_index}")
+        index_label.setFixedWidth(24)
+        index_label.setAlignment(Qt.AlignCenter)
+        index_label.setStyleSheet("color: #94a3b8; font-size: 10px; font-weight: bold;")
+        layout.addWidget(index_label)
+
+        text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+
+        self._type_label = QLabel()
+        type_font = QFont()
+        type_font.setBold(True)
+        type_font.setPointSize(9)
+        self._type_label.setFont(type_font)
+        self._type_label.setStyleSheet(f"color: {border_color};")
+        text_layout.addWidget(self._type_label)
+
+        self._summary_label = QLabel()
+        self._summary_label.setStyleSheet("color: #94a3b8; font-size: 8px;")
+        text_layout.addWidget(self._summary_label)
+
+        layout.addLayout(text_layout, 1)
+
+        btn_style = """
+            QPushButton {
+                background: transparent;
+                border: 1px solid #d1d5db;
+                border-radius: 3px;
+                font-size: 8px;
+                font-weight: bold;
+                padding: 1px 3px;
+                min-width: 18px;
+                max-width: 18px;
+                min-height: 18px;
+                max-height: 18px;
+            }
+            QPushButton:hover { background: #e5e7eb; }
+        """
+
+        btn_up = QPushButton("▲")
+        btn_up.setStyleSheet(btn_style)
+        btn_up.setToolTip("Move up")
+        btn_up.clicked.connect(lambda: self.move_up_clicked.emit(self.step_index - 1))
+        layout.addWidget(btn_up)
+
+        btn_down = QPushButton("▼")
+        btn_down.setStyleSheet(btn_style)
+        btn_down.setToolTip("Move down")
+        btn_down.clicked.connect(lambda: self.move_down_clicked.emit(self.step_index - 1))
+        layout.addWidget(btn_down)
+
+        btn_edit = QPushButton("✎")
+        btn_edit.setStyleSheet(f"""
+            QPushButton {{
+                background: transparent;
+                border: 2px solid {border_color};
+                border-radius: 5px;
+                font-size: 11px;
+                font-weight: bold;
+                padding: 2px 6px;
+                min-width: 28px;
+                max-width: 28px;
+                min-height: 28px;
+                max-height: 28px;
+            }}
+            QPushButton:hover {{ background: {border_color}50; }}
+        """)
+        btn_edit.setToolTip("Edit child params (click to edit type, selector, value)")
+        btn_edit.clicked.connect(lambda: self.enter_edit_mode())
+        layout.addWidget(btn_edit)
+
+        btn_del = QPushButton("✕")
+        btn_del.setStyleSheet("""
+            QPushButton {
+                background: transparent;
+                border: 1px solid #ef4444;
+                border-radius: 3px;
+                font-size: 8px;
+                font-weight: bold;
+                padding: 1px 3px;
+                min-width: 18px;
+                max-width: 18px;
+                min-height: 18px;
+                max-height: 18px;
+                color: #ef4444;
+            }
+            QPushButton:hover { background: #fef2f2; }
+        """)
+        btn_del.setToolTip("Remove child step")
+        btn_del.clicked.connect(lambda: self.remove_clicked.emit(self.step_index - 1))
+        layout.addWidget(btn_del)
+
+    def _build_edit_mode(self):
+        layout = QVBoxLayout(self._edit_widget)
+        layout.setContentsMargins(6, 4, 6, 4)
+        layout.setSpacing(4)
+
+        top_row = QHBoxLayout()
+        top_row.setSpacing(6)
+
+        # Type selector
+        self._edit_type_combo = QComboBox()
+        self._edit_type_combo.addItems([
+            "click", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "wait", "upload_file", "navigate",
+        ])
+        self._edit_type_combo.setCurrentText(self.action_type)
+        self._edit_type_combo.setFixedWidth(110)
+        self._edit_type_combo.setStyleSheet("font-size: 10px; padding: 2px;")
+        self._edit_type_combo.currentTextChanged.connect(self._on_edit_type_changed)
+        top_row.addWidget(self._edit_type_combo)
+
+        # Label
+        self._edit_label_input = QLineEdit()
+        self._edit_label_input.setPlaceholderText("Label")
+        self._edit_label_input.setStyleSheet("font-size: 10px; padding: 2px;")
+        self._edit_label_input.textChanged.connect(self._on_edit_label_changed)
+        top_row.addWidget(self._edit_label_input, 1)
+
+        btn_save = QPushButton("💾")
+        btn_save.setToolTip("Save")
+        btn_save.setStyleSheet("""
+            QPushButton {
+                background: transparent; border: 1px solid #4CAF50;
+                border-radius: 3px; font-size: 10px; font-weight: bold;
+                padding: 1px 4px; min-width: 22px; max-width: 22px;
+                min-height: 22px; max-height: 22px;
+            }
+            QPushButton:hover { background: #4CAF5020; }
+        """)
+        btn_save.clicked.connect(self._commit_edit)
+        top_row.addWidget(btn_save)
+
+        btn_cancel = QPushButton("✕")
+        btn_cancel.setToolTip("Cancel")
+        btn_cancel.setStyleSheet("""
+            QPushButton {
+                background: transparent; border: 1px solid #ef4444;
+                border-radius: 3px; font-size: 10px; font-weight: bold;
+                padding: 1px 4px; min-width: 22px; max-width: 22px;
+                min-height: 22px; max-height: 22px; color: #ef4444;
+            }
+            QPushButton:hover { background: #fef2f2; }
+        """)
+        btn_cancel.clicked.connect(self._cancel_edit)
+        top_row.addWidget(btn_cancel)
+
+        layout.addLayout(top_row)
+
+        # Selector row
+        selector_row = QHBoxLayout()
+        selector_row.setSpacing(6)
+        selector_row.addWidget(QLabel("Selector:"))
+        self._edit_selector_input = QLineEdit()
+        self._edit_selector_input.setPlaceholderText("CSS / XPath selector")
+        self._edit_selector_input.setStyleSheet("font-size: 10px; padding: 2px;")
+        self._edit_selector_input.textChanged.connect(self._on_edit_selector_changed)
+        selector_row.addWidget(self._edit_selector_input, 1)
+        layout.addLayout(selector_row)
+
+        # Value row
+        value_row = QHBoxLayout()
+        value_row.setSpacing(6)
+        value_row.addWidget(QLabel("Value:"))
+        self._edit_value_input = QLineEdit()
+        self._edit_value_input.setPlaceholderText("Value / text / option")
+        self._edit_value_input.setStyleSheet("font-size: 10px; padding: 2px;")
+        self._edit_value_input.textChanged.connect(self._on_edit_value_changed)
+        value_row.addWidget(self._edit_value_input, 1)
+        layout.addLayout(value_row)
+
+    def _apply_view_data(self):
+        border_color = self._border_color()
+        self._type_label.setText(f"[{self.action_type}] {self._child_data['label'] or self.action_type}")
+        self._type_label.setStyleSheet(f"color: {border_color};")
+
+        params = self._child_data.get("params", {})
+        summary_parts = []
+        if "selector" in params:
+            sel = str(params["selector"])
+            summary_parts.append(f"sel: {sel[:25]}..." if len(sel) > 25 else f"sel: {sel}")
+        if "value" in params:
+            val = str(params["value"])
+            summary_parts.append(f"val: {val[:20]}..." if len(val) > 20 else f"val: {val}")
+        if "skip_if_empty" in params and params["skip_if_empty"]:
+            summary_parts.append("skip_empty")
+        if "use_fill" in params and params["use_fill"]:
+            summary_parts.append("use_fill")
+        if summary_parts:
+            self._summary_label.setText(" | ".join(summary_parts))
+        else:
+            self._summary_label.setText("")
+
+    def enter_edit_mode(self):
+        self.setProperty("editing", "true")
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+        params = self._child_data.get("params", {})
+        self._edit_type_combo.setCurrentText(self.action_type)
+        self._edit_label_input.setText(self._child_data.get("label", ""))
+        self._edit_selector_input.setText(params.get("selector", ""))
+        self._edit_value_input.setText(params.get("value", ""))
+
+        self._view_widget.hide()
+        self._edit_widget.show()
+        self._edit_widget.raise_()
+        self.setFixedHeight(140)
+        self.main_layout.activate()
+        self.updateGeometry()
+
+    def exit_edit_mode(self, canceled=False):
+        self.setProperty("editing", "false")
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+        if not canceled:
+            self._apply_view_data()
+
+        self._edit_widget.hide()
+        self._view_widget.show()
+        self.setFixedHeight(64)
+
+    def _commit_edit(self):
+        new_type = self._edit_type_combo.currentText()
+        new_label = self._edit_label_input.text().strip()
+        new_selector = self._edit_selector_input.text().strip()
+        new_value = self._edit_value_input.text().strip()
+
+        self.action_type = new_type
+        self._child_data["type"] = new_type
+        self._child_data["label"] = new_label or new_type
+
+        child_params = self._child_data.get("params", {})
+        if new_selector:
+            child_params["selector"] = new_selector
+        elif "selector" in child_params:
+            del child_params["selector"]
+        if new_value:
+            child_params["value"] = new_value
+        elif "value" in child_params:
+            del child_params["value"]
+        self._child_data["params"] = child_params
+
+        self.exit_edit_mode(canceled=False)
+        self.params_edited.emit(self.step_index - 1, dict(self._child_data))
+
+    def _cancel_edit(self):
+        self._edit_type_combo.setCurrentText(self.action_type)
+        self._edit_label_input.setText(self._child_data.get("label", ""))
+        params = self._child_data.get("params", {})
+        self._edit_selector_input.setText(params.get("selector", ""))
+        self._edit_value_input.setText(params.get("value", ""))
+        self.exit_edit_mode(canceled=True)
+
+    def _on_edit_type_changed(self, new_type: str):
+        self._child_data["type"] = new_type
+
+    def _on_edit_label_changed(self, text: str):
+        self._child_data["label"] = text
+
+    def _on_edit_selector_changed(self, text: str):
+        if "params" not in self._child_data:
+            self._child_data["params"] = {}
+        self._child_data["params"]["selector"] = text
+
+    def _on_edit_value_changed(self, text: str):
+        if "params" not in self._child_data:
+            self._child_data["params"] = {}
+        self._child_data["params"]["value"] = text
+
+    def update_child_data(self, child_data: dict):
+        """Update child data from external source."""
+        self._child_data = dict(child_data)
+        self.action_type = self._child_data.get("type", "click")
+        self._edit_type_combo.setCurrentText(self.action_type)
+        self._edit_label_input.setText(self._child_data.get("label", ""))
+        self._apply_view_data()
 
 
 class PropertiesPanel(QWidget):
     """Panel untuk mengedit parameter action node."""
-    
+
     params_changed = Signal(str, dict)  # step_id, params
     save_requested = Signal()
     type_changed = Signal(str, str)  # step_id, new_type
-    
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_step_id = ""
         self.current_params = {}
         self.current_action_type = ""
+        self.current_children = []  # Untuk parallel_group child steps
+        self._child_item_widgets = []
         self.setWindowTitle("Properties")
-        
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
-        
+
         # Title
         title = QLabel("Properties")
         title_font = QFont()
@@ -38,27 +424,27 @@ class PropertiesPanel(QWidget):
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("color: #333; padding: 8px;")
         layout.addWidget(title)
-        
+
         # No selection label
         self.no_selection_label = QLabel("Select a node to edit its properties")
         self.no_selection_label.setAlignment(Qt.AlignCenter)
         self.no_selection_label.setStyleSheet("color: #999; padding: 20px;")
         layout.addWidget(self.no_selection_label)
-        
+
         # Scroll area for form
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
         self.form_widget = QWidget()
         self.form_layout = QFormLayout(self.form_widget)
         self.form_layout.setSpacing(4)
         self.form_layout.setContentsMargins(8, 8, 8, 8)
-        
+
         scroll.setWidget(self.form_widget)
         self.form_widget.hide()
         layout.addWidget(scroll)
-        
+
         # Save button
         self.save_btn = QPushButton("Save")
         self.save_btn.setStyleSheet("""
@@ -71,65 +457,48 @@ class PropertiesPanel(QWidget):
         """)
         self.save_btn.clicked.connect(lambda: self.save_requested.emit())
         layout.addWidget(self.save_btn)
-    
-    def show_action_properties(self, step_id: str, params: dict, action_type: str = ""):
-        """Tampilkan form untuk mengedit parameter action."""
+
+    def show_action_properties(self, step_id: str, params: dict, action_type: str = "",
+                               children: list = None):
+        """Tampilkan form untuk mengedit parameter action, termasuk children untuk parallel_group."""
         self.current_step_id = step_id
-        self.current_params = dict(params)
-        self.current_action_type = action_type or params.get("type", "")
-        
+        self.current_params = dict(params) if params is not None else {}
+        self.current_action_type = action_type or self.current_params.get("type", "")
+        self.current_children = children or []
+
         self.no_selection_label.hide()
         self.form_widget.show()
-        
+        self.form_widget.update()
+
         # Clear form
         while self.form_layout.count():
             item = self.form_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        
-        # Add type dropdown at top
-        type_widget = QWidget()
-        type_layout = QHBoxLayout(type_widget)
-        type_layout.setContentsMargins(0, 0, 0, 0)
-        type_label = QLabel("Type:")
-        self.type_combo = QComboBox()
-        self.type_combo.addItems([
-            "click", "input_text", "select", "select2", "select_dropdown",
-            "wait", "upload_file", "loop", "if_else", "navigate"
-        ])
-        if self.current_action_type in [
-            "click", "input_text", "select", "select2", "select_dropdown",
-            "wait", "upload_file", "loop", "if_else", "navigate"
-        ]:
-            self.type_combo.setCurrentText(self.current_action_type)
-        self.type_combo.currentTextChanged.connect(self._on_type_change)
-        type_layout.addWidget(type_label)
-        type_layout.addWidget(self.type_combo)
-        self.form_layout.addRow("", type_widget)
-        
-        # Add fields based on params
-        for key, value in params.items():
+
+        # Build form based on action type
+        base_type = self.current_action_type or self.current_params.get("type", "")
+        if not base_type:
+            base_type = "click"
+        self._rebuild_form_for_type(base_type)
+
+        # Override with actual values from params
+        for key, value in (params or {}).items():
             if key != "type":
-                self._add_field(key, value)
-        
-        # Add label field
-        self._add_field("label", params.get("label", ""))
-    
+                self.current_params[key] = value
+
+        self.form_widget.updateGeometry()
+
     def _on_type_change(self, new_type: str):
         """Handle perubahan tipe action."""
-        old_type = self.current_action_type
         self.current_action_type = new_type
-        
-        # Remove 'type' from params if present
+
         if "type" in self.current_params:
             del self.current_params["type"]
-        
-        # Emit signal untuk update node di editor
+
         self.type_changed.emit(self.current_step_id, new_type)
-        
-        # Rebuild form dengan field yang sesuai untuk type baru
         self._rebuild_form_for_type(new_type)
-    
+
     def _rebuild_form_for_type(self, action_type: str):
         """Rebuild form dengan field yang sesuai untuk action type."""
         # Clear current form
@@ -137,7 +506,7 @@ class PropertiesPanel(QWidget):
             item = self.form_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        
+
         # Add type dropdown
         type_widget = QWidget()
         type_layout = QHBoxLayout(type_widget)
@@ -145,15 +514,15 @@ class PropertiesPanel(QWidget):
         type_label = QLabel("Type:")
         self.type_combo = QComboBox()
         self.type_combo.addItems([
-            "click", "input_text", "select", "select2", "select_dropdown",
-            "wait", "upload_file", "loop", "if_else", "navigate"
+            "click", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
         ])
         self.type_combo.setCurrentText(action_type)
         self.type_combo.currentTextChanged.connect(self._on_type_change)
         type_layout.addWidget(type_label)
         type_layout.addWidget(self.type_combo)
         self.form_layout.addRow("", type_widget)
-        
+
         # Add fields based on action type
         if action_type == "click":
             self._add_field("selector", self.current_params.get("selector", ""))
@@ -162,7 +531,7 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
             self._add_field("force", self.current_params.get("force", False))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+
         elif action_type == "input_text":
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("selector_type", self.current_params.get("selector_type", "css"))
@@ -172,12 +541,12 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_before", self.current_params.get("wait_before", 500))
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+
         elif action_type == "select":
             self._add_field("options", self.current_params.get("options", []))
             self._add_field("selected", self.current_params.get("selected", ""))
             self._add_field("variable_name", self.current_params.get("variable_name", ""))
-        
+
         elif action_type == "select2":
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("search_selector", self.current_params.get("search_selector", ""))
@@ -186,7 +555,7 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
             self._add_field("clear_first", self.current_params.get("clear_first", True))
-        
+
         elif action_type == "select_dropdown":
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("selector_type", self.current_params.get("selector_type", "css"))
@@ -194,41 +563,188 @@ class PropertiesPanel(QWidget):
             self._add_field("select_value", self.current_params.get("select_value", ""))
             self._add_field("wait_before", self.current_params.get("wait_before", 500))
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
-            self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+            self._add_field("timeout", self.current_params.get("timeout", 10000))
+
+        elif action_type == "radio_select":
+            self._add_field("selector", self.current_params.get("selector", ""))
+            self._add_field("selector_type", self.current_params.get("selector_type", "css"))
+            self._add_field("value", self.current_params.get("value", ""))
+            self._add_field("select_by", self.current_params.get("select_by", "label"))
+            self._add_field("wait_before", self.current_params.get("wait_before", 0))
+            self._add_field("wait_after", self.current_params.get("wait_after", 0))
+            self._add_field("timeout", self.current_params.get("timeout", 10000))
+
         elif action_type == "wait":
             self._add_field("wait_type", self.current_params.get("wait_type", "fixed"))
             self._add_field("duration", self.current_params.get("duration", 1000))
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("selector_type", self.current_params.get("selector_type", "css"))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+
         elif action_type == "upload_file":
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("file_path", self.current_params.get("file_path", ""))
             self._add_field("wait_before", self.current_params.get("wait_before", 500))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+
         elif action_type == "loop":
             self._add_field("loop_type", self.current_params.get("loop_type", "count"))
             self._add_field("count", self.current_params.get("count", 1))
             self._add_field("data_key", self.current_params.get("data_key", ""))
             self._add_field("condition", self.current_params.get("condition", ""))
             self._add_field("max_iterations", self.current_params.get("max_iterations", 100))
-        
+
+            if self.current_children:
+                sep = QFrame()
+                sep.setFrameShape(QFrame.HLine)
+                sep.setStyleSheet("background: #e2e8f0; max-height: 1px; margin: 8px 0;")
+                self.form_layout.addRow("", sep)
+
+                children_header = QLabel("  Child Steps (Sequential)")
+                children_header.setStyleSheet("""
+                    color: #FF5722; font-weight: bold; font-size: 11px;
+                    padding: 6px 0; border-bottom: 2px solid #FF5722;
+                """)
+                self.form_layout.addRow("", children_header)
+
+                info_label = QLabel(f"  {len(self.current_children)} steps will run sequentially")
+                info_label.setStyleSheet("color: #64748b; font-size: 9px; padding: 2px 0 6px 0;")
+                self.form_layout.addRow("", info_label)
+
+                children_widget = QWidget()
+                children_layout = QVBoxLayout(children_widget)
+                children_layout.setContentsMargins(0, 4, 0, 4)
+                children_layout.setSpacing(4)
+
+                self._child_item_widgets = []
+                for i, child in enumerate(self.current_children):
+                    child_step_id = child.get("id", f"child_{i+1}")
+                    child_type = child.get("type", "unknown")
+                    child_label = child.get("label", child_type)
+                    child_params = child.get("params", {})
+
+                    child_item = ChildStepItem(
+                        child_step_id, child_type, child_label, child_params, i + 1
+                    )
+                    child_item.edit_clicked.connect(lambda idx: self.edit_child_step(idx))
+                    child_item.remove_clicked.connect(lambda idx: self.remove_child_step(idx))
+                    child_item.move_up_clicked.connect(lambda idx: self.move_child_up(idx))
+                    child_item.move_down_clicked.connect(lambda idx: self.move_child_down(idx))
+                    child_item.params_edited.connect(lambda idx, data: self._on_child_params_edited(idx, data))
+                    children_layout.addWidget(child_item)
+                    self._child_item_widgets.append(child_item)
+
+                add_child_btn = QPushButton("+ Add Child Step")
+                add_child_btn.setStyleSheet("""
+                    QPushButton {
+                        background: #FF5722;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 6px 12px;
+                        font-size: 10px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover { background: #E64A19; }
+                """)
+                add_child_btn.clicked.connect(self.add_child_step)
+                children_layout.addWidget(add_child_btn)
+
+                children_layout.addStretch()
+                self.form_layout.addRow("", children_widget)
+            else:
+                empty_label = QLabel("  (No child steps)")
+                empty_label.setStyleSheet("color: #94a3b8; font-size: 9px; padding: 8px;")
+                self.form_layout.addRow("", empty_label)
+
         elif action_type == "if_else":
             self._add_field("condition", self.current_params.get("condition", ""))
             self._add_field("variable_name", self.current_params.get("variable_name", ""))
             self._add_field("expected_value", self.current_params.get("expected_value", ""))
-        
+
         elif action_type == "navigate":
             self._add_field("url", self.current_params.get("url", ""))
             self._add_field("wait_until", self.current_params.get("wait_until", "domcontentloaded"))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
-        
+
+        elif action_type == "parallel_group":
+            # === PARALLEL GROUP: Tampilan khusus dengan child steps ===
+            self._add_field("timeout", self.current_params.get("timeout", 30000))
+            self._add_field("stagger_delay", self.current_params.get("stagger_delay", 200))
+            self._add_field("on_error", self.current_params.get("on_error", "skip"))
+
+            # Separator
+            sep = QFrame()
+            sep.setFrameShape(QFrame.HLine)
+            sep.setStyleSheet("background: #e2e8f0; max-height: 1px; margin: 8px 0;")
+            self.form_layout.addRow("", sep)
+
+            # Children section header
+            children_header = QLabel("  Child Steps (Concurrent)")
+            children_header.setStyleSheet("""
+                color: #009688; font-weight: bold; font-size: 11px;
+                padding: 6px 0; border-bottom: 2px solid #009688;
+            """)
+            self.form_layout.addRow("", children_header)
+
+            # Info label
+            info_label = QLabel(f"  {len(self.current_children)} steps will run concurrently")
+            info_label.setStyleSheet("color: #64748b; font-size: 9px; padding: 2px 0 6px 0;")
+            self.form_layout.addRow("", info_label)
+
+            # List of child steps
+            if self.current_children:
+                children_widget = QWidget()
+                children_layout = QVBoxLayout(children_widget)
+                children_layout.setContentsMargins(0, 4, 0, 4)
+                children_layout.setSpacing(4)
+
+                self._child_item_widgets = []
+                for i, child in enumerate(self.current_children):
+
+                    child_step_id = child.get("id", f"child_{i+1}")
+                    child_type = child.get("type", "unknown")
+                    child_label = child.get("label", child_type)
+                    child_params = child.get("params", {})
+
+                    child_item = ChildStepItem(
+                        child_step_id, child_type, child_label, child_params, i + 1
+                    )
+                    child_item.edit_clicked.connect(lambda idx: self.edit_child_step(idx))
+                    child_item.remove_clicked.connect(lambda idx: self.remove_child_step(idx))
+                    child_item.move_up_clicked.connect(lambda idx: self.move_child_up(idx))
+                    child_item.move_down_clicked.connect(lambda idx: self.move_child_down(idx))
+                    child_item.params_edited.connect(lambda idx, data: self._on_child_params_edited(idx, data))
+                    children_layout.addWidget(child_item)
+                    self._child_item_widgets.append(child_item)
+
+                # Add Child Step button
+                add_child_btn = QPushButton("+ Add Child Step")
+                add_child_btn.setStyleSheet("""
+                    QPushButton {
+                        background: #009688;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 6px 12px;
+                        font-size: 10px;
+                        font-weight: bold;
+                    }
+                    QPushButton:hover { background: #00897b; }
+                """)
+                add_child_btn.clicked.connect(self.add_child_step)
+                children_layout.addWidget(add_child_btn)
+
+                children_layout.addStretch()
+                self.form_layout.addRow("", children_widget)
+            else:
+                empty_label = QLabel("  (No child steps - add via workflow editor)")
+                empty_label.setStyleSheet("color: #94a3b8; font-size: 9px; padding: 8px;")
+                self.form_layout.addRow("", empty_label)
+
         # Always add label at the end
         self._add_field("label", self.current_params.get("label", ""))
-    
+
     def _add_field(self, key: str, value):
         """Tambah field ke form."""
         if isinstance(value, bool):
@@ -264,25 +780,86 @@ class PropertiesPanel(QWidget):
         else:
             widget = QLineEdit(str(value))
             widget.textChanged.connect(lambda v, k=key: self._on_param_change(k, v))
-        
+
         # Label
         label = key.replace("_", " ").title()
         self.form_layout.addRow(f"{label}:", widget)
-    
+
     def _on_list_param_change(self, key: str, value: str):
         """Handle perubahan parameter list (comma-separated)."""
         items = [item.strip() for item in value.split(",") if item.strip()]
         self.current_params[key] = items
         self.params_changed.emit(self.current_step_id, self.current_params)
-    
+
     def _on_param_change(self, key: str, value):
         """Handle perubahan parameter."""
         self.current_params[key] = value
         self.params_changed.emit(self.current_step_id, self.current_params)
-    
+
+    def add_child_step(self):
+        """Tambah child step baru ke loop atau parallel_group."""
+        from backend.core.action_registry import ActionRegistry
+        registry = ActionRegistry()
+        actions = registry.get_action_descriptions()
+        first_action = actions[0]["name"] if actions else "click"
+
+        new_child = {
+            "id": f"child_{len(self.current_children) + 1}",
+            "type": first_action,
+            "label": first_action.replace("_", " ").title(),
+            "params": {"label": first_action.replace("_", " ").title()},
+        }
+        self.current_children.append(new_child)
+        self.current_params["steps"] = self.current_children
+        self.params_changed.emit(self.current_step_id, self.current_params)
+        self._rebuild_form_for_type(self.current_action_type)
+
+    def remove_child_step(self, index: int):
+        """Hapus child step dari loop atau parallel_group."""
+        if 0 <= index < len(self.current_children):
+            del self.current_children[index]
+            self.current_params["steps"] = self.current_children
+            self.params_changed.emit(self.current_step_id, self.current_params)
+            self._rebuild_form_for_type(self.current_action_type)
+
+    def move_child_up(self, index: int):
+        """Pindah child step ke atas."""
+        if index > 0 and index < len(self.current_children):
+            self.current_children[index], self.current_children[index - 1] = \
+                self.current_children[index - 1], self.current_children[index]
+            self.current_params["steps"] = self.current_children
+            self.params_changed.emit(self.current_step_id, self.current_params)
+            self._rebuild_form_for_type(self.current_action_type)
+
+    def move_child_down(self, index: int):
+        """Pindah child step ke bawah."""
+        if 0 <= index < len(self.current_children) - 1:
+            self.current_children[index], self.current_children[index + 1] = \
+                self.current_children[index + 1], self.current_children[index]
+            self.current_params["steps"] = self.current_children
+            self.params_changed.emit(self.current_step_id, self.current_params)
+            self._rebuild_form_for_type(self.current_action_type)
+
+    def edit_child_step(self, index: int):
+        """Edit child step - masukkan inline edit mode di ChildStepItem."""
+        if 0 <= index < len(self.current_children):
+            child_item = self._child_item_widgets[index]
+            if isinstance(child_item, ChildStepItem):
+                child_item.enter_edit_mode()
+
+    def _on_child_params_edited(self, index: int, child_data: dict):
+        """Handle inline edit dari ChildStepItem."""
+        if 0 <= index < len(self.current_children):
+            self.current_children[index] = child_data
+            self.current_params["steps"] = self.current_children
+            self.params_changed.emit(self.current_step_id, self.current_params)
+
     def clear(self):
         """Bersihkan form."""
         self.current_step_id = ""
         self.current_params = {}
+        self.current_action_type = ""
+        self.current_children = []
+        self._child_item_widgets = []
         self.no_selection_label.show()
         self.form_widget.hide()

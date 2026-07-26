@@ -1,0 +1,456 @@
+<div class="modal-dialog modal-lg" role="document">
+  <div class="modal-content">
+      <form method="POST" action="http://superpos.local/public/contacts" accept-charset="UTF-8" id="contact_add_form"><input name="_token" type="hidden" value="aBJKQPtVt7H9eZunKsz6iPDYmIR0WpzRX70Eo4eL">
+
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <h4 class="modal-title">Tambah kontak baru</h4>
+    </div>
+
+    <div class="modal-body">
+        <div class="row">            
+            <div class="col-md-4 contact_type_div">
+                <div class="form-group">
+                    <label for="type">Jenis kontak:*</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-user"></i>
+                        </span>
+                        <select class="form-control" id="contact_type" required name="type"><option value="">Silahkan pilih</option><option value="supplier">Pemasok</option><option value="customer" selected="selected">Pelanggan</option><option value="both">Keduanya (Pemasok dan Pelanggan)</option></select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mt-15">
+                <label class="radio-inline">
+                    <input type="radio" name="contact_type_radio" id="inlineRadio1" value="individual">
+                    Individu                </label>
+                <label class="radio-inline">
+                    <input type="radio" name="contact_type_radio" id="inlineRadio2" value="business">
+                    Bisnis                </label>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="contact_id">ID Kontak:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-id-badge"></i>
+                        </span>
+                        <input class="form-control" placeholder="ID Kontak" name="contact_id" type="text" id="contact_id">
+                    </div>
+                    <p class="help-block">
+                        Biarkan kosong untuk membuat otomatis                    </p>
+                </div>
+            </div>
+            <div class="col-md-4 customer_fields">
+                <div class="form-group">
+                  <label for="customer_group_id">Grup Pelanggan:</label>
+                  <div class="input-group">
+                      <span class="input-group-addon">
+                          <i class="fa fa-users"></i>
+                      </span>
+                      <select class="form-control" id="customer_group_id" name="customer_group_id"><option value="" selected="selected">Tidak ada</option></select>
+                  </div>
+                </div>
+            </div>
+            <div class="clearfix customer_fields"></div>
+            <div class="col-md-4 business" style="display: none;">
+                <div class="form-group">
+                    <label for="supplier_business_name">Nama Bisnis:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-briefcase"></i>
+                        </span>
+                        <input class="form-control" placeholder="Nama Bisnis" name="supplier_business_name" type="text" id="supplier_business_name">
+                    </div>
+                </div>
+            </div>
+
+            <div class="clearfix"></div>
+
+            <div class="col-md-3 individual" style="display: none;">
+                <div class="form-group">
+                    <label for="prefix">Awalan:</label>
+                    <input class="form-control" placeholder="Bpk / Ibu / Nona" name="prefix" type="text" id="prefix">
+                </div>
+            </div>
+            <div class="col-md-3 individual" style="display: none;">
+                <div class="form-group">
+                    <label for="first_name">Nama Depan:*</label>
+                    <input class="form-control" required placeholder="Nama Depan" name="first_name" type="text" id="first_name">
+                </div>
+            </div>
+            <div class="col-md-3 individual" style="display: none;">
+                <div class="form-group">
+                    <label for="middle_name">Nama tengah:</label>
+                    <input class="form-control" placeholder="Nama tengah" name="middle_name" type="text" id="middle_name">
+                </div>
+            </div>
+            <div class="col-md-3 individual" style="display: none;">
+                <div class="form-group">
+                    <label for="last_name">Nama Belakang:</label>
+                    <input class="form-control" placeholder="Nama Belakang" name="last_name" type="text" id="last_name">
+                </div>
+            </div>
+            <div class="clearfix"></div>
+        
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="mobile">Mobile:*</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-mobile"></i>
+                        </span>
+                        <input class="form-control" required placeholder="Mobile" name="mobile" type="text" id="mobile">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="alternate_number">Nomor kontak alternatif:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-phone"></i>
+                        </span>
+                        <input class="form-control" placeholder="Nomor kontak alternatif" name="alternate_number" type="text" id="alternate_number">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="landline">Telepon rumah:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-phone"></i>
+                        </span>
+                        <input class="form-control" placeholder="Telepon rumah" name="landline" type="text" id="landline">
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-envelope"></i>
+                        </span>
+                        <input class="form-control" placeholder="Email" name="email" type="email" id="email">
+                    </div>
+                </div>
+            </div>
+            <div class="clearfix"></div>
+            <div class="col-sm-4 individual" style="display: none;">
+                <div class="form-group">
+                    <label for="dob">Tanggal lahir:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-calendar"></i>
+                        </span>
+                        
+                        <input class="form-control dob-date-picker" placeholder="Tanggal lahir" readonly name="dob" type="text" id="dob">
+                    </div>
+                </div>
+            </div>
+
+            <!-- lead additional field -->
+            <div class="col-md-4 lead_additional_div">
+              <div class="form-group">
+                  <label for="crm_source">Source:</label>
+                  <div class="input-group">
+                      <span class="input-group-addon">
+                          <i class="fas fa fa-search"></i>
+                      </span>
+                      <select class="form-control" id="crm_source" name="crm_source"><option selected="selected" value="">Silahkan pilih</option></select>
+                  </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4 lead_additional_div">
+              <div class="form-group">
+                  <label for="crm_life_stage">Life Stage:</label>
+                  <div class="input-group">
+                      <span class="input-group-addon">
+                          <i class="fas fa fa-life-ring"></i>
+                      </span>
+                      <select class="form-control" id="crm_life_stage" name="crm_life_stage"><option selected="selected" value="">Silahkan pilih</option></select>
+                  </div>
+              </div>
+            </div>
+
+            <!-- User in create leads -->
+            <div class="col-md-6 lead_additional_div">
+                  <div class="form-group">
+                      <label for="user_id">Ditugaskan kepada:*</label>
+                      <div class="input-group">
+                          <span class="input-group-addon">
+                              <i class="fa fa-user"></i>
+                          </span>
+                          <select class="form-control select2" id="user_id" multiple required style="width: 100%;" name="user_id[]"><option value="1"> Rohmat Ali Wardani</option><option value="2"> Demo </option></select>
+                      </div>
+                  </div>
+            </div>
+
+            <!-- User in create customer & supplier -->
+                            <div class="col-md-6">
+                      <div class="form-group">
+                          <label for="assigned_to_users">Ditugaskan kepada:</label>
+                          <div class="input-group">
+                              <span class="input-group-addon">
+                                  <i class="fa fa-user"></i>
+                              </span>
+                              <select class="form-control select2" id="assigned_to_users" multiple style="width: 100%;" name="assigned_to_users[]"><option value="1"> Rohmat Ali Wardani</option><option value="2"> Demo </option></select>
+                          </div>
+                      </div>
+                </div>
+            
+            <div class="clearfix"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <button type="button" class="tw-dw-btn tw-dw-btn-primary tw-text-white tw-dw-btn-sm center-block more_btn" data-target="#more_div">Informasi lebih lanjut <i class="fa fa-chevron-down"></i></button>
+            </div>
+
+            <div id="more_div" class="hide">
+                <input id="position" name="position" type="hidden">
+                <div class="col-md-12"><hr/></div>
+
+                <div class="col-md-4">
+                    <div class="form-group">
+                      <label for="tax_number">Nomor pajak:</label>
+                        <div class="input-group">
+                          <span class="input-group-addon">
+                              <i class="fa fa-info"></i>
+                          </span>
+                          <input class="form-control" placeholder="Nomor pajak" name="tax_number" type="text" id="tax_number">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 opening_balance">
+                  <div class="form-group">
+                      <label for="opening_balance">Saldo Awal:</label>
+                      <div class="input-group">
+                          <span class="input-group-addon">
+                              <i class="fas fa-money-bill-alt"></i>
+                          </span>
+                          <input class="form-control input_number" name="opening_balance" type="text" value="0" id="opening_balance">
+                      </div>
+                  </div>
+                </div>
+
+                <div class="col-md-4 pay_term">
+                  <div class="form-group">
+                    <div class="multi-input">
+                      <label for="pay_term_number">Termin pembayaran:</label> <i class="fa fa-info-circle text-info hover-q no-print " aria-hidden="true" 
+                    data-container="body" data-toggle="popover" data-placement="auto bottom" 
+                    data-content="Pembayaran harus dibayar untuk pembelian/penjualan dalam periode waktu tertentu.<br/><small class='text-muted'>Semua pembayaran yang akan datang atau jatuh tempo akan ditampilkan di dasbor - Bagian Pembayaran Karena</small>" data-html="true" data-trigger="hover"></i>                      <br/>
+                      <input class="form-control width-40 pull-left" placeholder="Termin pembayaran" name="pay_term_number" type="number" id="pay_term_number">
+
+                      <select class="form-control width-60 pull-left" name="pay_term_type"><option selected="selected" value="">Silahkan pilih</option><option value="months">Bulan</option><option value="days">Hari</option></select>
+                    </div>
+                  </div>
+                </div>
+                <div class="clearfix"></div>
+                                <div class="col-md-4 customer_fields">
+                  <div class="form-group">
+                      <label for="credit_limit">Batas Kredit:</label>
+                      <div class="input-group">
+                          <span class="input-group-addon">
+                              <i class="fas fa-money-bill-alt"></i>
+                          </span>
+                          <input class="form-control input_number" name="credit_limit" type="text" id="credit_limit">
+                      </div>
+                      <p class="help-block">Kosong (tanpa batas kredit)</p>
+                  </div>
+                </div>
+                
+
+                <div class="col-md-12"><hr/></div>
+                <div class="clearfix"></div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="address_line_1">Alamat baris 1:</label>
+                        <input class="form-control" placeholder="Alamat baris 1" rows="3" name="address_line_1" type="text" id="address_line_1">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="address_line_2">Alamat Baris 2:</label>
+                        <input class="form-control" placeholder="Alamat Baris 2" rows="3" name="address_line_2" type="text" id="address_line_2">
+                    </div>
+                </div>
+                <div class="clearfix"></div>
+              <div class="col-md-3">
+                <div class="form-group">
+                    <label for="city">Kota:</label>
+                    <div class="input-group">
+                        <span class="input-group-addon">
+                            <i class="fa fa-map-marker"></i>
+                        </span>
+                        <input class="form-control" placeholder="Kota" name="city" type="text" id="city">
+                    </div>
+                </div>
+              </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="state">Negara:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Negara" name="state" type="text" id="state">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="country">Negara:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-globe"></i>
+                    </span>
+                    <input class="form-control" placeholder="Negara" name="country" type="text" id="country">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="zip_code">Kode Pos:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Kode Pos" name="zip_code" type="text" id="zip_code">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+                <label for="land_mark">Landmark:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Landmark" name="land_mark" type="text" id="land_mark">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+                <label for="street_name">Street name:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Street name" name="street_name" type="text" id="street_name">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+                <label for="building_number">Building number:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Building number" name="building_number" type="text" id="building_number">
+                </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+                <label for="additional_number">Nomor tambahan/Nomor sekunder:</label>
+                <div class="input-group">
+                    <span class="input-group-addon">
+                        <i class="fa fa-map-marker"></i>
+                    </span>
+                    <input class="form-control" placeholder="Additional number" name="additional_number" type="text" id="additional_number">
+                </div>
+            </div>
+          </div>
+
+          <div class="clearfix"></div>
+          <div class="col-md-12">
+            <hr/>
+          </div>
+                    <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field1">Bidang Kustom 1:</label>
+                <input class="form-control" placeholder="Bidang Kustom 1" name="custom_field1" type="text" id="custom_field1">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field2">Bidang Kustom 2:</label>
+                <input class="form-control" placeholder="Bidang Kustom 2" name="custom_field2" type="text" id="custom_field2">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field3">Bidang Kustom 3:</label>
+                <input class="form-control" placeholder="Bidang Kustom 3" name="custom_field3" type="text" id="custom_field3">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field4">Bidang Kustom 4:</label>
+                <input class="form-control" placeholder="Bidang Kustom 4" name="custom_field4" type="text" id="custom_field4">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field5">Bidang Kustom 5:</label>
+                <input class="form-control" placeholder="Bidang Kustom 5" name="custom_field5" type="text" id="custom_field5">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field6">Bidang Kustom 6:</label>
+                <input class="form-control" placeholder="Bidang Kustom 6" name="custom_field6" type="text" id="custom_field6">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field7">Bidang Kustom 7:</label>
+                <input class="form-control" placeholder="Bidang Kustom 7" name="custom_field7" type="text" id="custom_field7">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field8">Bidang Kustom 8:</label>
+                <input class="form-control" placeholder="Bidang Kustom 8" name="custom_field8" type="text" id="custom_field8">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field9">Bidang Kustom 9:</label>
+                <input class="form-control" placeholder="Bidang Kustom 9" name="custom_field9" type="text" id="custom_field9">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+                <label for="custom_field10">Bidang Kustom 10:</label>
+                <input class="form-control" placeholder="Bidang Kustom 10" name="custom_field10" type="text" id="custom_field10">
+            </div>
+          </div>
+          <div class="col-md-12 shipping_addr_div"><hr></div>
+          <div class="col-md-8 col-md-offset-2 shipping_addr_div mb-10" >
+              <strong>Alamat Pengiriman</strong><br>
+              <input class="form-control" placeholder="Cari alamat" id="shipping_address" name="shipping_address" type="text">
+            <div class="mb-10" id="map"></div>
+          </div>
+          
+                                                                                    </div>
+        </div>
+            </div>
+    
+    <div class="modal-footer">
+      <button type="submit" class="tw-dw-btn tw-dw-btn-primary tw-text-white">Simpan</button>
+      <button type="button" class="tw-dw-btn tw-dw-btn-neutral tw-text-white" data-dismiss="modal">Tutup</button>
+    </div>
+
+    </form>
+  
+  </div><!-- /.modal-content -->
+</div><!-- /.modal-dialog -->

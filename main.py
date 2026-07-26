@@ -35,6 +35,8 @@ from backend.actions.select_dropdown_action import SelectDropdownAction
 from backend.actions.upload_file_action import UploadFileAction
 from backend.actions.loop_action import LoopAction
 from backend.actions.if_else_action import IfElseAction
+from backend.actions.parallel_group_action import ParallelGroupAction
+from backend.actions.radio_select_action import RadioSelectAction
 
 # Data Sources
 from backend.data_sources.excel_source import ExcelDataSource
@@ -98,9 +100,11 @@ def create_action_registry() -> ActionRegistry:
     
     # Phase 2: Additional actions
     registry.register(SelectDropdownAction())
+    registry.register(RadioSelectAction())
     registry.register(UploadFileAction())
     registry.register(LoopAction())
     registry.register(IfElseAction())
+    registry.register(ParallelGroupAction())
     
     logger.info(f"Action registry initialized with {len(registry.get_all())} actions")
     logger.debug(f"Registered actions: {', '.join(registry.get_action_names())}")

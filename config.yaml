@@ -36,3 +36,56 @@ screenshot:
   format: "png"
   quality: 100
   full_page: false
+
+# Session Settings - Agar tidak perlu login ulang setiap kali workflow dijalankan
+session:
+  # Mode koneksi browser:
+  #   "persistent"    - Browser menyimpan session (cookies, localStorage) ke folder lokal.
+  #                     Login sekali, session tersimpan untuk eksekusi berikutnya.
+  #   "connect"       - Connect ke browser Chrome/Edge yang sudah running.
+  #                     Buka browser manual, login, lalu tinggal execute workflow.
+  #   "default"       - Mode default, buka browser baru setiap kali (tanpa session).
+  mode: "persistent"
+  
+  # Persistent context settings (hanya untuk mode: "persistent")
+  persistent:
+    # Folder tempat menyimpan data session browser (cookies, localStorage, dll)
+    user_data_dir: "browser_session"
+    # URL halaman login (akan dibuka otomatis jika session belum ada)
+    login_url: ""
+    # Timeout menunggu user login manual (dalam detik), 0 = tidak ada limit
+    login_timeout: 120
+  
+  # Connect to existing browser settings (hanya untuk mode: "connect")
+  connect:
+    # URL WebSocket endpoint dari Chrome remote debugging
+    # Cara dapat endpoint:
+    #   1. Buka Chrome dengan parameter: chrome.exe --remote-debugging-port=9222
+    #   2. Buka http://localhost:9222/json/version
+    #   3. Copy nilai "webSocketDebuggerUrl"
+    ws_endpoint: "http://localhost:9222"
+    # Atau langsung ws endpoint:
+    # ws_endpoint: "ws://127.0.0.1:9222/devtools/browser/..."
+    browser: "chromium"    # chromium, firefox, webkit
+
+# Performance Settings
+performance:
+  mode: "turbo"           # normal | turbo | bulk
+  turbo:
+    use_fill: true         # Gunakan fill() langsung tanpa type() delay
+    slow_mo: 0             # No Playwright delay
+    screenshot_on_error: false
+    screenshot_on_step: false
+    log_level: "WARNING"   # Minimal logging
+    wait_before_default: 0
+    wait_after_default: 0
+    parallel_group_timeout: 30000
+  bulk:
+    use_fill: true
+    slow_mo: 0
+    screenshot_on_error: false
+    screenshot_on_step: false
+    log_level: "ERROR"     # Hanya error logging
+    wait_before_default: 0
+    wait_after_default: 0
+    parallel_group_timeout: 60000

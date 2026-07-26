@@ -41,7 +41,7 @@
       "id": "step_3",
       "type": "wait",
       "label": "Wait sebelum input form",
-      "params": {"wait_type": "fixed", "time": 1500}
+      "params": {"wait_type": "fixed", "duration": 1500}
     },
     {
       "id": "step_4",
@@ -196,7 +196,7 @@
       "id": "step_19",
       "type": "wait",
       "label": "Wait sebelum submit",
-      "params": {"wait_type": "fixed", "time": 1000}
+      "params": {"wait_type": "fixed", "duration": 1000}
     },
     {
       "id": "step_20",

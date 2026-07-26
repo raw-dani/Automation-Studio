@@ -51,7 +51,7 @@
       "label": "Wait sebelum input form",
       "params": {
         "wait_type": "fixed",
-        "time": 1500
+        "duration": 1500
       }
     },
     {
@@ -120,7 +120,7 @@
       "label": "Wait sebelum submit",
       "params": {
         "wait_type": "fixed",
-        "time": 1000
+        "duration": 1000
       }
     },
     {

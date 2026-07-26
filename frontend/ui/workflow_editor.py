@@ -1,533 +1,589 @@
 """
-Workflow Editor - Canvas untuk drag & drop workflow nodes.
+Workflow Editor - Tree/list view untuk menampilkan struktur workflow secara detail.
+Mendukung nested children untuk loop, parallel_group, if_else.
 """
 
-import uuid
-from typing import Optional
-from dataclasses import dataclass, field
-
 from PySide6.QtWidgets import (
-    QGraphicsView, QGraphicsScene, QGraphicsItem, QGraphicsObject,
-    QGraphicsRectItem, QGraphicsTextItem, QGraphicsLineItem,
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton,
+    QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox
 )
-from PySide6.QtCore import (
-    Qt, Signal, QRectF, QPointF, QLineF
-)
-from PySide6.QtGui import (
-    QPen, QBrush, QColor, QFont, QPainter, QLinearGradient, QTransform
-)
+from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtGui import QFont, QColor, QBrush, QIcon
 
 from backend.core.workflow_parser import Workflow, WorkflowStep
 
 
-# Colors
-COLORS = {
-    "click": {"bg": "#E3F2FD", "border": "#2196F3", "text": "#1565C0"},
-    "input_text": {"bg": "#F3E5F5", "border": "#9C27B0", "text": "#7B1FA2"},
-    "select": {"bg": "#E0F7FA", "border": "#00BCD4", "text": "#006064"},
-    "select2": {"bg": "#E0F7FA", "border": "#00BCD4", "text": "#006064"},
-    "select_dropdown": {"bg": "#FFF3E0", "border": "#FF9800", "text": "#E65100"},
-    "upload_file": {"bg": "#E8F5E9", "border": "#4CAF50", "text": "#2E7D32"},
-    "wait": {"bg": "#FFF8E1", "border": "#FFC107", "text": "#F57F17"},
-    "loop": {"bg": "#FBE9E7", "border": "#FF5722", "text": "#BF360C"},
-    "if_else": {"bg": "#E8EAF6", "border": "#3F51B5", "text": "#283593"},
-    "navigate": {"bg": "#F3E5F5", "border": "#9C27B0", "text": "#7B1FA2"},
-    "default": {"bg": "#ECEFF1", "border": "#607D8B", "text": "#37474F"},
+WORKFLOW_COLORS = {
+    "wait": ("#FFF8E1", "#FFC107", "#F57F17"),
+    "click": ("#E3F2FD", "#2196F3", "#1565C0"),
+    "input_text": ("#F3E5F5", "#9C27B0", "#7B1FA2"),
+    "select": ("#E0F7FA", "#00BCD4", "#006064"),
+    "select2": ("#E0F7FA", "#00BCD4", "#006064"),
+    "select_dropdown": ("#FFF3E0", "#FF9800", "#E65100"),
+    "radio_select": ("#FBE9E7", "#FF5722", "#BF360C"),
+    "upload_file": ("#E8F5E9", "#4CAF50", "#2E7D32"),
+    "loop": ("#FBE9E7", "#FF5722", "#BF360C"),
+    "if_else": ("#E8EAF6", "#3F51B5", "#283593"),
+    "parallel_group": ("#E0F2F1", "#009688", "#004D40"),
+    "navigate": ("#F3E5F5", "#9C27B0", "#7B1FA2"),
+    "default": ("#ECEFF1", "#607D8B", "#37474F"),
 }
 
 
-class ActionNode(QGraphicsObject):
-    """Node graphics item untuk satu action dalam workflow."""
-    
-    node_selected = Signal(str, dict)  # step_id, params
-    node_moved = Signal(str, QPointF)
-    
-    def __init__(self, step_id: str, action_type: str, label: str = "",
-                 params: dict = None, parent=None):
-        super().__init__(parent)
-        self.step_id = step_id
-        self.action_type = action_type
-        self.label = label or action_type
-        self.params = params or {}
-        self.setFlag(QGraphicsItem.ItemIsMovable)
-        self.setFlag(QGraphicsItem.ItemIsSelectable)
-        self.setFlag(QGraphicsItem.ItemSendsGeometryChanges)
-        
-        # Node dimensions
-        self.width = 180
-        self.height = 60
-        
-        # Get colors
-        colors = COLORS.get(action_type, COLORS["default"])
-        self.bg_color = QColor(colors["bg"])
-        self.border_color = QColor(colors["border"])
-        self.text_color = QColor(colors["text"])
-        
-        self._create_ui()
-    
-    def _create_ui(self):
-        """Buat tampilan node."""
-        # Background
-        self.bg_rect = QGraphicsRectItem(0, 0, self.width, self.height, self)
-        self.bg_rect.setBrush(QBrush(self.bg_color))
-        self.bg_rect.setPen(QPen(self.border_color, 2))
-        
-        # Type label
-        self.type_text = QGraphicsTextItem(self)
-        self.type_text.setPlainText(f"[{self.action_type}]")
-        self.type_text.setDefaultTextColor(self.text_color)
-        font = QFont()
-        font.setBold(True)
-        font.setPointSize(9)
-        self.type_text.setFont(font)
-        self.type_text.setPos(8, 4)
-        
-        # Label
-        self.label_text = QGraphicsTextItem(self)
-        self.label_text.setPlainText(self.label)
-        self.label_text.setDefaultTextColor(self.text_color)
-        label_font = QFont()
-        label_font.setPointSize(10)
-        self.label_text.setFont(label_font)
-        self.label_text.setPos(8, 22)
-        
-        # Index badge (set later)
-        self.index_text = QGraphicsTextItem(self)
-        self.index_text.setDefaultTextColor(QColor("#999"))
-        index_font = QFont()
-        index_font.setPointSize(8)
-        self.index_text.setFont(index_font)
-        self.index_text.setPos(self.width - 25, 4)
-    
-    def set_index(self, index: int):
-        """Set nomor urut node."""
-        self.index_text.setPlainText(f"#{index}")
-    
-    def update_label(self, label: str):
-        """Update label node."""
-        self.label = label
-        self.label_text.setPlainText(label or self.action_type)
-    
-    def update_params(self, params: dict):
-        """Update parameter node."""
-        self.params = params
-        if "label" in params:
-            self.update_label(params["label"])
-    
-    def boundingRect(self):
-        return QRectF(0, 0, self.width, self.height)
-    
-    def paint(self, painter, option, widget):
-        pass  # All painting done by child items
-    
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemPositionChange:
-            self.node_moved.emit(self.step_id, value)
-        return super().itemChange(change, value)
-    
-    def mouseDoubleClickEvent(self, event):
-        """Double click to select and show properties."""
-        self.node_selected.emit(self.step_id, self.params)
-        super().mouseDoubleClickEvent(event)
-    
-    def mousePressEvent(self, event):
-        """Single click to select."""
-        super().mousePressEvent(event)
-        if self.isSelected():
-            self.node_selected.emit(self.step_id, self.params)
+class WorkflowEditor(QWidget):
+    """Editor workflow berbasis tree/list, bukan canvas."""
 
-
-class ConnectionLine(QGraphicsLineItem):
-    """Garis penghubung antar node."""
-    
-    def __init__(self, start_node: ActionNode, end_node: ActionNode, parent=None):
-        super().__init__(parent)
-        self.start_node = start_node
-        self.end_node = end_node
-        
-        self.setPen(QPen(QColor("#90A4AE"), 2, Qt.DashLine))
-        self.setZValue(-1)
-        
-        self._update_position()
-    
-    def _update_position(self):
-        """Update posisi garis mengikuti node."""
-        if self.start_node and self.end_node:
-            start_pos = self.start_node.pos() + QPointF(self.start_node.width, 30)
-            end_pos = self.end_node.pos() + QPointF(0, 30)
-            self.setLine(QLineF(start_pos, end_pos))
-    
-    def update_position(self):
-        self._update_position()
-
-
-class WorkflowEditor(QGraphicsView):
-    """
-    Canvas editor untuk workflow nodes.
-    Mendukung drag & drop, selection, zoom, dan koneksi antar node.
-    """
-    
-    node_selected = Signal(str, dict)  # step_id, params
+    node_selected = Signal(str, dict, str)  # step_id, params, action_type
     node_deselected = Signal()
     nodes_changed = Signal()
-    
+    undo_available = Signal(bool)
+    redo_available = Signal(bool)
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.scene = QGraphicsScene(self)
-        self.setScene(self.scene)
-        
-        # Data
-        self.nodes: dict[str, ActionNode] = {}
-        self.node_order: list[str] = []
-        self.connections: list[ConnectionLine] = []
-        self.node_counter = 0
-        
-        # Setup view
-        self.setRenderHint(QPainter.Antialiasing)
-        self.setRenderHint(QPainter.SmoothPixmapTransform)
-        self.setDragMode(QGraphicsView.RubberBandDrag)
-        self.setAcceptDrops(True)
-        self.setMinimumSize(400, 300)
-        
-        # Grid background
-        self.setBackgroundBrush(QBrush(QColor("#FAFAFA")))
-        
-        # Zoom
-        self._zoom = 1.0
-        self._min_zoom = 0.3
-        self._max_zoom = 3.0
-        
-        # Selection tracking
-        self.scene.selectionChanged.connect(self._on_selection_changed)
-        
-        # Draw grid
-        self._draw_grid()
-    
-    def _draw_grid(self):
-        """Draw grid background."""
-        grid_pen = QPen(QColor("#E0E0E0"), 1)
-        for x in range(0, 3000, 50):
-            self.scene.addLine(x, 0, x, 2000, grid_pen)
-        for y in range(0, 2000, 50):
-            self.scene.addLine(0, y, 3000, y, grid_pen)
-    
-    def add_action_node(self, action_type: str, params: dict = None,
-                        pos: QPointF = None) -> str:
-        """Tambah node action baru."""
-        step_id = f"step_{self.node_counter + 1}"
-        self.node_counter += 1
-        
-        label = params.get("label", action_type.replace("_", " ").title()) if params else action_type.replace("_", " ").title()
-        
-        node = ActionNode(step_id, action_type, label, params or {})
-        node.set_index(self.node_counter)
-        
-        # Position
-        if pos:
-            node.setPos(pos)
-        else:
-            x = 100 + (self.node_counter % 3) * 250
-            y = 100 + (self.node_counter // 3) * 120
-            node.setPos(x, y)
-        
-        # Connect signals
-        node.node_selected.connect(self._on_node_selected)
-        node.node_moved.connect(self._update_connections)
-        
-        self.scene.addItem(node)
-        self.nodes[step_id] = node
-        self.node_order.append(step_id)
-        
-        # Auto-connect to previous node
-        self._auto_connect(node)
-        
+        self.workflow = None
+        self.current_file = None
+
+        self._undo_stack = []
+        self._redo_stack = []
+        self._max_history = 20
+
+        self._init_ui()
+
+    def _init_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Toolbar
+        toolbar = QHBoxLayout()
+        toolbar.setContentsMargins(8, 8, 8, 4)
+        toolbar.setSpacing(6)
+
+        title = QLabel("Workflow Structure")
+        title.setStyleSheet("font-weight: bold; font-size: 13px; color: #37474F;")
+        toolbar.addWidget(title)
+
+        toolbar.addStretch()
+
+        self.undo_btn = QPushButton("Undo")
+        self.undo_btn.setEnabled(False)
+        self.undo_btn.clicked.connect(self.undo)
+        toolbar.addWidget(self.undo_btn)
+
+        self.redo_btn = QPushButton("Redo")
+        self.redo_btn.setEnabled(False)
+        self.redo_btn.clicked.connect(self.redo)
+        toolbar.addWidget(self.redo_btn)
+
+        zoom_fit_btn = QPushButton("Expand All")
+        zoom_fit_btn.clicked.connect(self._expand_all)
+        toolbar.addWidget(zoom_fit_btn)
+
+        zoom_fit_btn2 = QPushButton("Collapse All")
+        zoom_fit_btn2.clicked.connect(self._collapse_all)
+        toolbar.addWidget(zoom_fit_btn2)
+
+        layout.addLayout(toolbar)
+
+        # Tree
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["#", "Step", "Type", "Selector / Value", "Status"])
+        self.tree.setColumnWidth(0, 50)
+        self.tree.setColumnWidth(1, 220)
+        self.tree.setColumnWidth(2, 140)
+        self.tree.setColumnWidth(3, 260)
+        self.tree.setColumnWidth(4, 110)
+        self.tree.setAlternatingRowColors(True)
+        self.tree.setSelectionMode(QTreeWidget.SingleSelection)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self._on_context_menu)
+        self.tree.itemSelectionChanged.connect(self._on_selection_changed)
+        self.tree.setStyleSheet("""
+            QTreeWidget {
+                background: #FAFAFA;
+                alternate-background-color: #F5F5F5;
+                font-size: 12px;
+            }
+            QTreeWidget::item {
+                padding: 6px;
+                border-bottom: 1px solid #E0E0E0;
+            }
+            QTreeWidget::item:selected {
+                background: #E3F2FD;
+                color: #1565C0;
+            }
+            QTreeWidget::item:hover {
+                background: #F0F0F0;
+            }
+        """)
+        layout.addWidget(self.tree)
+
+    def load_workflow(self, workflow: Workflow):
+        """Load workflow ke tree view."""
+        self.workflow = workflow
+        selected_id = self._get_selected_step_id()
+        self.tree.clear()
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self._update_undo_redo_signals()
+
+        global_idx = [0]
+
+        def add_step(parent_item, step, depth=0):
+            idx = global_idx[0]
+            global_idx[0] += 1
+
+            colors = WORKFLOW_COLORS.get(step.type, WORKFLOW_COLORS["default"])
+            bg, border, text = colors
+
+            item = QTreeWidgetItem(parent_item)
+            item.setText(0, str(idx))
+            item.setText(1, step.label or step.id)
+            item.setText(2, step.type)
+            item.setText(3, self._summarize_params(step.params))
+            item.setText(4, "")
+            item.setData(0, Qt.UserRole, step.id)
+            item.setData(1, Qt.UserRole, step.type)
+
+            font = QFont()
+            font.setBold(depth == 0)
+            font.setPointSize(10 if depth == 0 else 9)
+            for col in range(5):
+                item.setFont(col, font)
+
+            style = f"background: {bg}; color: {text}; border-left: 4px solid {border};"
+            item.setBackground(0, QBrush(QColor(bg)))
+            item.setBackground(1, QBrush(QColor(bg)))
+            item.setForeground(0, QBrush(QColor(text)))
+            item.setForeground(1, QBrush(QColor(text)))
+
+            if depth == 0:
+                item.setBackground(2, QBrush(QColor(bg)))
+                item.setForeground(2, QBrush(QColor(text)))
+                item.setBackground(3, QBrush(QColor(bg)))
+                item.setForeground(3, QBrush(QColor(text)))
+                item.setBackground(4, QBrush(QColor(bg)))
+                item.setForeground(4, QBrush(QColor(text)))
+
+            for child in step.children:
+                add_step(item, child, depth + 1)
+
+            return item
+
+        for step in workflow.steps:
+            add_step(self.tree.invisibleRootItem(), step)
+
+        self.tree.expandAll()
+        self._restore_selection(selected_id)
         self.nodes_changed.emit()
-        return step_id
-    
-    def _auto_connect(self, new_node: ActionNode):
-        """Auto-connect node baru ke node sebelumnya."""
-        prev_node = None
-        for node_id, node in self.nodes.items():
-            if node == new_node:
-                break
-            prev_node = node
-        
-        if prev_node:
-            connection = ConnectionLine(prev_node, new_node)
-            self.scene.addItem(connection)
-            self.connections.append(connection)
-    
-    def _update_connections(self):
-        """Update semua garis koneksi."""
-        for conn in self.connections:
-            conn.update_position()
-    
-    def _on_node_selected(self, step_id: str, params: dict):
-        """Handle node selection."""
-        self.node_selected.emit(step_id, params)
-    
+
+    def _get_selected_step_id(self):
+        """Dapatkan step_id yang sedang dipilih."""
+        selected = self.tree.selectedItems()
+        if selected:
+            return selected[0].data(0, Qt.UserRole)
+        return None
+
+    def _restore_selection(self, step_id):
+        """Kembalikan seleksi tree ke step_id yang diberikan."""
+        if not step_id:
+            return
+        found = self._find_item_by_id(self.tree.invisibleRootItem(), step_id)
+        if found:
+            found.setSelected(True)
+            self.tree.scrollToItem(found)
+
+    def _find_item_by_id(self, parent_item, step_id):
+        """Cari QTreeWidgetItem berdasarkan step_id secara rekursif."""
+        for i in range(parent_item.childCount()):
+            item = parent_item.child(i)
+            if item.data(0, Qt.UserRole) == step_id:
+                return item
+            result = self._find_item_by_id(item, step_id)
+            if result:
+                return result
+        return None
+
+    def _summarize_params(self, params: dict) -> str:
+        """Buat ringkasan parameter untuk ditampilkan di kolom."""
+        parts = []
+        if "selector" in params:
+            sel = str(params["selector"])
+            parts.append(sel[:40] + "..." if len(sel) > 40 else sel)
+        if "value" in params:
+            val = str(params["value"])
+            parts.append(val[:25] + "..." if len(val) > 25 else val)
+        if "select_value" in params:
+            val = str(params["select_value"])
+            parts.append(f"label={val[:20]}")
+        if "url" in params:
+            url = str(params["url"])
+            parts.append(url[:35] + "..." if len(url) > 35 else url)
+        if "loop_type" in params:
+            parts.append(f"loop={params['loop_type']}")
+        if "duration" in params:
+            parts.append(f"{params['duration']}ms")
+        if "timeout" in params:
+            parts.append(f"timeout={params['timeout']}ms")
+        return " | ".join(parts) if parts else "-"
+
     def _on_selection_changed(self):
         """Handle selection change."""
-        selected = self.scene.selectedItems()
+        selected = self.tree.selectedItems()
         if not selected:
             self.node_deselected.emit()
-    
-    def load_workflow(self, workflow: Workflow):
-        """Load workflow ke editor."""
-        self.clear()
-        
-        for i, step in enumerate(workflow.steps):
-            step_id = step.id or f"step_{i+1}"
-            self.node_counter = max(self.node_counter, i + 1)
-            
-            node = ActionNode(step_id, step.type, step.label, step.params)
-            node.set_index(i + 1)
-            node.setPos(100, 100 + i * 120)
-            
-            node.node_selected.connect(self._on_node_selected)
-            node.node_moved.connect(self._update_connections)
-            
-            self.scene.addItem(node)
-            self.nodes[step_id] = node
-            self.node_order.append(step_id)
-            
-            # Connect to previous
-            if i > 0:
-                prev_id = self.node_order[-2]
-                prev_node = self.nodes[prev_id]
-                connection = ConnectionLine(prev_node, node)
-                self.scene.addItem(connection)
-                self.connections.append(connection)
-        
-        self.nodes_changed.emit()
-        self.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-    
+            return
+
+        item = selected[0]
+        step_id = item.data(0, Qt.UserRole)
+        action_type = item.data(1, Qt.UserRole)
+        params = {}
+
+        if self.workflow:
+            step = self._find_step(self.workflow.steps, step_id)
+            if step:
+                params = dict(step.params)
+
+        self.node_selected.emit(step_id, params, action_type)
+
+    def _find_step(self, steps, step_id):
+        """Cari step secara rekursif."""
+        for step in steps:
+            if step.id == step_id:
+                return step
+            if step.children:
+                found = self._find_step(step.children, step_id)
+                if found:
+                    return found
+        return None
+
+    def _on_context_menu(self, pos):
+        """Handle context menu."""
+        item = self.tree.itemAt(pos)
+        if not item:
+            return
+
+        step_id = item.data(0, Qt.UserRole)
+        action_type = item.data(1, Qt.UserRole)
+
+        menu = QMenu()
+        menu.addSection(f"Step: {step_id} ({action_type})")
+        edit_action = menu.addAction("Edit Properties")
+        delete_action = menu.addAction("Delete Step")
+        move_up_action = menu.addAction("Move Up")
+        move_down_action = menu.addAction("Move Down")
+
+        action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
+        if action == edit_action:
+            self._edit_step(step_id)
+        elif action == delete_action:
+            self._delete_step(step_id)
+        elif action == move_up_action:
+            self._move_step(step_id, -1)
+        elif action == move_down_action:
+            self._move_step(step_id, 1)
+
+    def _edit_step(self, step_id):
+        """Edit step properties."""
+        step = self._find_step(self.workflow.steps, step_id)
+        if step:
+            self.node_selected.emit(step_id, dict(step.params), step.type)
+
+    def _delete_step(self, step_id):
+        """Delete step from workflow."""
+        pass
+
+    def _move_step(self, step_id, direction):
+        """Move step up or down."""
+        pass
+
+    def _capture_state(self):
+        """Capture current workflow state for undo/redo."""
+        if len(self._undo_stack) >= self._max_history:
+            self._undo_stack.pop(0)
+        data = self.to_workflow_data()
+        self._undo_stack.append(data)
+        self._redo_stack.clear()
+        self._update_undo_redo_signals()
+
+    def _update_undo_redo_signals(self):
+        """Emit signals untuk update undo/redo button state."""
+        self.undo_available.emit(len(self._undo_stack) > 0)
+        self.redo_available.emit(len(self._redo_stack) > 0)
+        self.undo_btn.setEnabled(len(self._undo_stack) > 0)
+        self.redo_btn.setEnabled(len(self._redo_stack) > 0)
+
     def to_workflow_data(self) -> dict:
-        """Konversi editor state ke dictionary workflow."""
+        """Konversi tree state ke dictionary workflow."""
+        if not self.workflow:
+            return {}
+
         steps = []
-        for i, step_id in enumerate(self.node_order):
-            if step_id not in self.nodes:
+        root = self.tree.invisibleRootItem()
+        for i in range(root.childCount()):
+            item = root.child(i)
+            step_id = item.data(0, Qt.UserRole)
+            step = self._find_step(self.workflow.steps, step_id)
+            if not step:
                 continue
-            node = self.nodes[step_id]
-            step = {
-                "id": step_id,
-                "type": node.action_type,
-                "label": node.label,
-                "params": node.params,
-                "on_error": "stop",
+
+            step_dict = {
+                "id": step.id,
+                "type": step.type,
+                "label": step.label,
+                "params": dict(step.params),
+                "on_error": step.on_error,
                 "retry": {"max_retries": 3, "delay": 2000},
             }
-            steps.append(step)
-        
+
+            if step.children:
+                step_dict["steps"] = self._serialize_children(step.children)
+
+            steps.append(step_dict)
+
         return {
-            "id": f"workflow_{uuid.uuid4().hex[:8]}",
-            "name": "My Workflow",
-            "version": "1.0",
-            "data_source": None,
+            "id": self.workflow.id,
+            "name": self.workflow.name,
+            "version": self.workflow.version,
+            "url": getattr(self.workflow, 'url', ''),
+            "data_source": getattr(self.workflow, 'data_source', None),
             "steps": steps,
-            "monitoring": {
-                "screenshot_on_error": True,
-                "screenshot_on_step": False,
-                "log_level": "INFO",
-            },
+            "monitoring": getattr(self.workflow, 'monitoring', {}),
+            "created_at": getattr(self.workflow, 'created_at', ''),
+            "updated_at": getattr(self.workflow, 'updated_at', ''),
         }
-    
+
+    def _serialize_children(self, children):
+        """Serialkan child steps termasuk nested children."""
+        result = []
+        for c in children:
+            child_dict = {
+                "id": c.id,
+                "type": c.type,
+                "label": c.label,
+                "params": dict(c.params),
+                "on_error": c.on_error,
+                "retry": {"max_retries": 3, "delay": 2000},
+            }
+            if c.children:
+                child_dict["steps"] = self._serialize_children(c.children)
+            result.append(child_dict)
+        return result
+
+    def undo(self):
+        """Undo last action."""
+        if not self._undo_stack:
+            return
+        current = self.to_workflow_data()
+        self._redo_stack.append(current)
+        state = self._undo_stack.pop()
+        self._load_workflow_data(state)
+        self._update_undo_redo_signals()
+        self.nodes_changed.emit()
+
+    def redo(self):
+        """Redo last undone action."""
+        if not self._redo_stack:
+            return
+        current = self.to_workflow_data()
+        self._undo_stack.append(current)
+        state = self._redo_stack.pop()
+        self._load_workflow_data(state)
+        self._update_undo_redo_signals()
+        self.nodes_changed.emit()
+
+    def _load_workflow_data(self, data: dict):
+        """Load workflow dari dictionary."""
+        from backend.core.workflow_parser import WorkflowParser
+        parser = WorkflowParser()
+        try:
+            workflow = parser.parse(data)
+            self.load_workflow(workflow)
+        except Exception as e:
+            print(f"Failed to load workflow data: {e}")
+
     def update_node_params(self, step_id: str, params: dict):
         """Update parameter node yang dipilih."""
-        if step_id in self.nodes:
-            self.nodes[step_id].update_params(params)
-    
+        if not self.workflow:
+            return
+        self._capture_state()
+
+        step = self._find_step(self.workflow.steps, step_id)
+        if step:
+            step.params = params
+            if "label" in params:
+                step.label = params["label"]
+
+            if "steps" in params:
+                new_children = []
+                for child_data in params.get("steps", []):
+                    new_children.append(WorkflowStep(
+                        id=child_data.get("id", f"child_{len(new_children) + 1}"),
+                        type=child_data.get("type", "unknown"),
+                        label=child_data.get("label", ""),
+                        params=child_data.get("params", {}),
+                        on_error=child_data.get("on_error", "skip"),
+                        retry=child_data.get("retry", {"max_retries": 3, "delay": 2000}),
+                    ))
+                step.children = new_children
+
+        self._update_tree_item(step_id)
+        self.nodes_changed.emit()
+
+    def _update_tree_item(self, step_id: str):
+        """Perbarui teks QTreeWidgetItem untuk step tertentu tanpa rebuild penuh."""
+        if not self.workflow:
+            return
+        step = self._find_step(self.workflow.steps, step_id)
+        if not step:
+            return
+
+        def update_item(parent_item, s):
+            for i in range(parent_item.childCount()):
+                item = parent_item.child(i)
+                item_id = item.data(0, Qt.UserRole)
+                if item_id == s.id:
+                    item.setText(1, s.label or s.id)
+                    item.setText(2, s.type)
+                    item.setText(3, self._summarize_params(s.params))
+
+                    colors = WORKFLOW_COLORS.get(s.type, WORKFLOW_COLORS["default"])
+                    bg, border, text = colors
+                    for col in range(5):
+                        item.setBackground(col, QBrush(QColor(bg)))
+                        item.setForeground(col, QBrush(QColor(text)))
+                    break
+                if s.children:
+                    update_item(item, s)
+
+        update_item(self.tree.invisibleRootItem(), step)
+
+    def _add_tree_item(self, step, parent_item=None):
+        """Tambah QTreeWidgetItem untuk step baru tanpa rebuild penuh."""
+        if parent_item is None:
+            parent_item = self.tree.invisibleRootItem()
+
+        idx = self._next_tree_index()
+        colors = WORKFLOW_COLORS.get(step.type, WORKFLOW_COLORS["default"])
+        bg, border, text = colors
+
+        item = QTreeWidgetItem(parent_item)
+        item.setText(0, str(idx))
+        item.setText(1, step.label or step.id)
+        item.setText(2, step.type)
+        item.setText(3, self._summarize_params(step.params))
+        item.setText(4, "")
+        item.setData(0, Qt.UserRole, step.id)
+        item.setData(1, Qt.UserRole, step.type)
+
+        font = QFont()
+        font.setBold(True)
+        font.setPointSize(10)
+        for col in range(5):
+            item.setFont(col, font)
+
+        for col in range(5):
+            item.setBackground(col, QBrush(QColor(bg)))
+            item.setForeground(col, QBrush(QColor(text)))
+
+        for child in step.children:
+            self._add_tree_item(child, item)
+
+        return item
+
+    def _next_tree_index(self):
+        """Dapatkan indeks berikutnya yang tersedia di tree."""
+        count = [0]
+
+        def walk(parent):
+            for i in range(parent.childCount()):
+                walk(parent.child(i))
+                count[0] += 1
+
+        walk(self.tree.invisibleRootItem())
+        return count[0]
+
     def change_node_type(self, step_id: str, new_type: str):
         """Ubah tipe action node."""
-        if step_id not in self.nodes:
+        if not self.workflow:
             return
-        
-        node = self.nodes[step_id]
-        old_type = node.action_type
-        
-        if old_type == new_type:
-            return
-        
-        # Update node type
-        node.action_type = new_type
-        node.type_text.setPlainText(f"[{new_type}]")
-        
-        # Update colors based on new type
-        colors = COLORS.get(new_type, COLORS["default"])
-        node.bg_color = QColor(colors["bg"])
-        node.border_color = QColor(colors["border"])
-        node.text_color = QColor(colors["text"])
-        node.bg_rect.setBrush(QBrush(node.bg_color))
-        node.bg_rect.setPen(QPen(node.border_color, 2))
-        node.type_text.setDefaultTextColor(node.text_color)
-        node.label_text.setDefaultTextColor(node.text_color)
-        
-        # Update params with default params for new type
+        self._capture_state()
+
+        step = self._find_step(self.workflow.steps, step_id)
+        if step:
+            step.type = new_type
+            from backend.core.action_registry import ActionRegistry
+            registry = ActionRegistry()
+            action = registry.get(new_type)
+            if action:
+                step.params = action.default_params.copy()
+                step.label = step.label or new_type.replace("_", " ").title()
+
+        self._update_tree_item(step_id)
+        self.nodes_changed.emit()
+
+    def add_action_node(self, action_type: str, params: dict = None, label: str = "", step_id: str = None):
+        """Tambah step baru ke workflow."""
+        if not self.workflow:
+            return None
+        self._capture_state()
+
         from backend.core.action_registry import ActionRegistry
         registry = ActionRegistry()
-        action = registry.get(new_type)
-        if action:
-            default_params = action.default_params.copy()
-            default_params["label"] = node.label
-            node.params = default_params
-            node.label_text.setPlainText(node.label)
-        
+        action = registry.get(action_type)
+        default_params = action.default_params.copy() if action else {}
+        if params:
+            default_params.update(params)
+
+        new_step = WorkflowStep(
+            id=step_id or f"step_{len(self.workflow.steps) + 1}",
+            type=action_type,
+            label=label or action_type.replace("_", " ").title(),
+            params=default_params,
+            on_error="stop",
+            retry={"max_retries": 3, "delay": 2000},
+        )
+        self.workflow.steps.append(new_step)
+
+        # Tambah item tree tanpa rebuild penuh
+        self._add_tree_item(new_step)
         self.nodes_changed.emit()
-    
+        return new_step.id
+
     def delete_selected(self):
         """Hapus node yang dipilih."""
-        for item in self.scene.selectedItems():
-            if isinstance(item, ActionNode):
-                # Remove connections
-                self.connections = [c for c in self.connections
-                                    if c.start_node != item and c.end_node != item]
-                # Remove node
-                step_id = item.step_id
-                if step_id in self.nodes:
-                    del self.nodes[step_id]
-                if step_id in self.node_order:
-                    self.node_order.remove(step_id)
-                self.scene.removeItem(item)
-        
-        # Re-index
-        for i, step_id in enumerate(self.node_order):
-            if step_id in self.nodes:
-                self.nodes[step_id].set_index(i + 1)
-        
-        self.nodes_changed.emit()
-    
-    def move_node_up(self, step_id: str) -> bool:
-        """Pindah node ke atas dalam urutan eksekusi."""
-        if step_id not in self.node_order:
-            return False
-        
-        idx = self.node_order.index(step_id)
-        if idx <= 0:
-            return False
-        
-        self.node_order[idx], self.node_order[idx - 1] = self.node_order[idx - 1], self.node_order[idx]
-        self._reorder_connections()
-        self._reindex_nodes()
-        self.nodes_changed.emit()
-        return True
-    
-    def move_node_down(self, step_id: str) -> bool:
-        """Pindah node ke bawah dalam urutan eksekusi."""
-        if step_id not in self.node_order:
-            return False
-        
-        idx = self.node_order.index(step_id)
-        if idx >= len(self.node_order) - 1:
-            return False
-        
-        self.node_order[idx], self.node_order[idx + 1] = self.node_order[idx + 1], self.node_order[idx]
-        self._reorder_connections()
-        self._reindex_nodes()
-        self.nodes_changed.emit()
-        return True
-    
-    def _reorder_connections(self):
-        """Perbarui garis koneksi sesuai urutan node_order."""
-        for i in range(len(self.connections)):
-            if i + 1 < len(self.node_order):
-                start_id = self.node_order[i]
-                end_id = self.node_order[i + 1]
-                if start_id in self.nodes and end_id in self.nodes:
-                    self.connections[i].start_node = self.nodes[start_id]
-                    self.connections[i].end_node = self.nodes[end_id]
-        self._update_connections()
-    
-    def _reindex_nodes(self):
-        """Perbarui nomor urut node sesuai node_order."""
-        for i, step_id in enumerate(self.node_order):
-            if step_id in self.nodes:
-                self.nodes[step_id].set_index(i + 1)
-    
-    def clear(self):
-        """Bersihkan semua node."""
-        self.scene.clear()
-        self.nodes.clear()
-        self.node_order.clear()
-        self.connections.clear()
-        self.node_counter = 0
-        self._draw_grid()
-    
-    def keyPressEvent(self, event):
-        """Handle keyboard shortcuts."""
-        if event.key() == Qt.Key_Delete or event.key() == Qt.Key_Backspace:
-            self.delete_selected()
-            event.accept()
+        selected = self.tree.selectedItems()
+        if not selected:
             return
-        
-        selected_items = self.scene.selectedItems()
-        if selected_items:
-            item = selected_items[0]
-            if isinstance(item, ActionNode):
-                if event.modifiers() == Qt.ControlModifier:
-                    if event.key() == Qt.Key_Up:
-                        self.move_node_up(item.step_id)
-                        event.accept()
-                        return
-                    elif event.key() == Qt.Key_Down:
-                        self.move_node_down(item.step_id)
-                        event.accept()
-                        return
-        
-        super().keyPressEvent(event)
-    
-    def zoom_in(self):
-        """Zoom in."""
-        self._zoom = min(self._zoom * 1.2, self._max_zoom)
-        transform = QTransform()
-        transform.scale(self._zoom, self._zoom)
-        self.setTransform(transform)
-    
-    def zoom_out(self):
-        """Zoom out."""
-        self._zoom = max(self._zoom / 1.2, self._min_zoom)
-        transform = QTransform()
-        transform.scale(self._zoom, self._zoom)
-        self.setTransform(transform)
-    
-    def zoom_fit(self):
-        """Fit to screen."""
-        self.fitInView(self.scene.sceneRect(), Qt.KeepAspectRatio)
-        self._zoom = self.transform().m11()
-    
-    def wheelEvent(self, event):
-        """Zoom dengan scroll wheel."""
-        if event.modifiers() == Qt.ControlModifier:
-            delta = event.angleDelta().y()
-            if delta > 0:
-                self.zoom_in()
-            else:
-                self.zoom_out()
-            event.accept()
-        else:
-            super().wheelEvent(event)
-    
-    def dragEnterEvent(self, event):
-        """Accept drag events."""
-        if event.mimeData().hasText() and event.mimeData().text().startswith("action:"):
-            event.acceptProposedAction()
-        else:
-            super().dragEnterEvent(event)
-    
-    def dragMoveEvent(self, event):
-        if event.mimeData().hasText() and event.mimeData().text().startswith("action:"):
-            event.acceptProposedAction()
-        else:
-            super().dragMoveEvent(event)
-    
-    def dropEvent(self, event):
-        """Handle drop dari action palette."""
-        if event.mimeData().hasText():
-            text = event.mimeData().text()
-            if text.startswith("action:"):
-                action_type = text[7:]  # Remove "action:" prefix
-                pos = self.mapToScene(event.position().toPoint())
-                self.add_action_node(action_type, {}, pos)
-                event.acceptProposedAction()
-                return
-        super().dropEvent(event)
+        item = selected[0]
+        step_id = item.data(0, Qt.UserRole)
+        self._delete_step(step_id)
+
+    def move_node_up(self, step_id: str) -> bool:
+        """Pindah node ke atas."""
+        return self._move_step(step_id, -1)
+
+    def move_node_down(self, step_id: str) -> bool:
+        """Pindah node ke bawah."""
+        return self._move_step(step_id, 1)
+
+    def _expand_all(self):
+        """Expand all items."""
+        self.tree.expandAll()
+
+    def _collapse_all(self):
+        """Collapse all items."""
+        self.tree.collapseAll()
+
+    def select_all(self):
+        """Select semua item di tree."""
+        self.tree.selectAll()
+
+    def clear(self):
+        """Bersihkan editor."""
+        self.workflow = None
+        self.tree.clear()
+        self._undo_stack.clear()
+        self._redo_stack.clear()
+        self._update_undo_redo_signals()

@@ -51,7 +51,7 @@
       "label": "Wait sebelum update",
       "params": {
         "wait_type": "fixed",
-        "time": 2000
+        "duration": 2000
       }
     },
     {
