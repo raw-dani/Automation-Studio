@@ -3,6 +3,7 @@ Click Action - Melakukan klik pada elemen di halaman web.
 """
 
 from backend.actions.base_action import BaseAction, ExecutionContext, ActionResult, ActionStatus
+import asyncio
 
 
 class ClickAction(BaseAction):
@@ -21,6 +22,7 @@ class ClickAction(BaseAction):
             "wait_after": 0,         # ms (dikurangi dari 500ms untuk performa)
             "force": False,          # force click even if not visible
             "timeout": 30000,        # ms
+            "wait_for_load_state": "none",  # none, domcontentloaded, load, networkidle
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -45,6 +47,7 @@ class ClickAction(BaseAction):
         wait_after = params.get("wait_after", 0)
         force = params.get("force", False)
         timeout = params.get("timeout", 10000)
+        wait_for_load_state = params.get("wait_for_load_state", "none")
         
         # Performance config
         perf = context.config.get("performance", {})
@@ -60,8 +63,6 @@ class ClickAction(BaseAction):
         # Konversi selector
         play_selector = self._convert_selector(selector, selector_type)
         
-        import asyncio
-        
         # Wait before
         if wait_before > 0:
             await asyncio.sleep(wait_before / 1000)
@@ -73,8 +74,7 @@ class ClickAction(BaseAction):
             # Tutup modal overlay yang mungkin menghalangi klik
             await self._dismiss_modal(page)
             
-            # Klik elemen
-            await page.click(play_selector, force=force, timeout=timeout)
+            await self._safe_click(page, play_selector, force, timeout, wait_for_load_state)
             
             # Wait after
             if wait_after > 0:
@@ -110,17 +110,74 @@ class ClickAction(BaseAction):
                 ".modal.show .close",
                 ".modal.in .btn-close",
                 ".modal.in .close",
+                ".contact_modal .close",
+                ".contact_modal .btn-close",
+                ".modal-backdrop",
             ]
             for sel in dismissors:
-                elements = await page.query_selector_all(sel)
-                for el in elements:
-                    visible = await el.is_visible()
-                    if visible:
-                        await el.click(force=True, timeout=1000)
-                        await asyncio.sleep(0.1)
-                        break
+                try:
+                    elements = await page.query_selector_all(sel)
+                    for el in elements:
+                        visible = await el.is_visible()
+                        if visible:
+                            await el.click(force=True, timeout=1000)
+                            await asyncio.sleep(0.15)
+                            break
+                except Exception:
+                    continue
+
+            try:
+                await page.keyboard.press("Escape")
+                await asyncio.sleep(0.1)
+            except Exception:
+                pass
         except Exception:
             pass
+
+    async def _dismiss_modal_js(self, page):
+        """Tutup modal overlay menggunakan JavaScript."""
+        try:
+            await page.evaluate("""() => {
+                document.querySelectorAll('.modal.in, .modal.show').forEach(m => {
+                    m.classList.remove('in', 'show');
+                    m.style.display = 'none';
+                });
+                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                document.body.classList.remove('modal-open');
+            }""")
+        except Exception:
+            pass
+
+    async def _safe_click(self, page, play_selector, force, timeout, wait_for_load_state):
+        """Klik elemen dengan retry jika tertutup modal overlay."""
+        attempts = 0
+        max_attempts = 3
+        while attempts < max_attempts:
+            attempts += 1
+            try:
+                await self._dismiss_modal(page)
+                await self._dismiss_modal_js(page)
+                await page.click(play_selector, force=force, timeout=timeout)
+                if wait_for_load_state != "none":
+                    await page.wait_for_load_state(wait_for_load_state, timeout=timeout)
+                return
+            except Exception as e:
+                error_msg = str(e).lower()
+                if "intercept" in error_msg or "blocked" in error_msg or "overlay" in error_msg or "modal" in error_msg:
+                    await self._dismiss_modal(page)
+                    await self._dismiss_modal_js(page)
+                    await asyncio.sleep(0.3)
+                    continue
+                raise
+        await page.evaluate("""(sel) => {
+            const el = document.querySelector(sel);
+            if (el) el.click();
+        }""", play_selector)
+        if wait_for_load_state != "none":
+            try:
+                await page.wait_for_load_state(wait_for_load_state, timeout=timeout)
+            except Exception:
+                pass
 
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:
         """Substitusi variable {{data.field}} dengan nilai dari context."""

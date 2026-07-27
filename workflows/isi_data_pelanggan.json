@@ -61,11 +61,11 @@
           "type": "click",
           "label": "Klik tombol Tambah Pelanggan Baru",
           "params": {
-            "selector": "//*[@id=\"scrollable-container\"]/section[2]/div[2]/div/div[1]/div/a",
-            "selector_type": "xpath",
+            "selector": ".btn-modal",
+            "selector_type": "css",
             "timeout": 10000,
             "wait_after": 0,
-            "wait_before": 0
+            "wait_before": 100
           },
           "on_error": "skip",
           "retry": {
@@ -97,8 +97,8 @@
           "label": "Isi semua field pelanggan secara bersamaan",
           "params": {
             "on_error": "stop",
-            "timeout": 15000,
-            "stagger_delay": 100
+            "timeout": 8000,
+            "stagger_delay": 50
           },
           "on_error": "stop",
           "retry": {
@@ -111,7 +111,7 @@
               "type": "select_dropdown",
               "label": "Pilih Jenis Kontak",
               "params": {
-                "select_by": "value",
+                "select_by": "label",
                 "select_value": "{{data.Jenis Kontak}}",
                 "selector": "#contact_type",
                 "selector_type": "css",
@@ -130,13 +130,13 @@
               "type": "radio_select",
               "label": "Pilih Tipe",
               "params": {
-                "selector": "",
+                "select_by": "value",
+                "selector": "input[name=\"contact_type_radio\"]",
                 "selector_type": "css",
-                "value": "",
-                "select_by": "label",
-                "wait_before": 0,
+                "timeout": 10000,
+                "value": "{{data.Tipe}}",
                 "wait_after": 0,
-                "timeout": 10000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -149,14 +149,14 @@
               "type": "input_text",
               "label": "Input ID Kontak",
               "params": {
-                "selector": "",
-                "selector_type": "css",
-                "value": "",
                 "clear_first": true,
+                "selector": "#contact_id",
+                "selector_type": "css",
+                "timeout": 10000,
                 "type_delay": 50,
-                "wait_before": 0,
+                "value": "{{data.ID Kontak}}",
                 "wait_after": 0,
-                "timeout": 30000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -169,13 +169,13 @@
               "type": "select_dropdown",
               "label": "Pilih Grup Pelanggan",
               "params": {
-                "selector": "",
-                "selector_type": "css",
                 "select_by": "label",
-                "select_value": "",
-                "wait_before": 0,
+                "select_value": "{{data.Grup Pelanggan}}",
+                "selector": "#customer_group_id",
+                "selector_type": "css",
+                "timeout": 10000,
                 "wait_after": 0,
-                "timeout": 10000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -188,14 +188,14 @@
               "type": "input_text",
               "label": "Input No. Mobile",
               "params": {
-                "selector": "",
-                "selector_type": "css",
-                "value": "",
                 "clear_first": true,
+                "selector": "#mobile",
+                "selector_type": "css",
+                "timeout": 30000,
                 "type_delay": 50,
-                "wait_before": 0,
+                "value": "{{data.Mobile}}",
                 "wait_after": 0,
-                "timeout": 30000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -208,14 +208,14 @@
               "type": "input_text",
               "label": "Input No. Kontak Alternatif",
               "params": {
-                "selector": "",
-                "selector_type": "css",
-                "value": "",
                 "clear_first": true,
+                "selector": "#alternate_number",
+                "selector_type": "css",
+                "timeout": 30000,
                 "type_delay": 50,
-                "wait_before": 0,
+                "value": "{{data.Nomor Kontak Alternatif}}",
                 "wait_after": 0,
-                "timeout": 30000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -228,14 +228,14 @@
               "type": "input_text",
               "label": "Input Telepon Rumah",
               "params": {
-                "selector": "",
-                "selector_type": "css",
-                "value": "",
                 "clear_first": true,
+                "selector": "#landline",
+                "selector_type": "css",
+                "timeout": 30000,
                 "type_delay": 50,
-                "wait_before": 0,
+                "value": "{{data.Telepon Rumah}}",
                 "wait_after": 0,
-                "timeout": 30000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -248,14 +248,14 @@
               "type": "input_text",
               "label": "Input Email",
               "params": {
-                "selector": "",
-                "selector_type": "css",
-                "value": "",
                 "clear_first": true,
+                "selector": "#email",
+                "selector_type": "css",
+                "timeout": 30000,
                 "type_delay": 50,
-                "wait_before": 0,
+                "value": "{{data.Email}}",
                 "wait_after": 0,
-                "timeout": 30000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -268,13 +268,13 @@
               "type": "select_dropdown",
               "label": "Pilih Ditugaskan Kepada",
               "params": {
-                "selector": "",
-                "selector_type": "css",
                 "select_by": "label",
-                "select_value": "",
-                "wait_before": 0,
+                "select_value": "{{data.Ditugaskan Kepada}}",
+                "selector": "#assigned_to_users",
+                "selector_type": "css",
+                "timeout": 10000,
                 "wait_after": 0,
-                "timeout": 10000
+                "wait_before": 0
               },
               "on_error": "skip",
               "retry": {
@@ -289,8 +289,8 @@
           "type": "wait",
           "label": "Wait sebelum submit",
           "params": {
-            "duration": 500,
-            "timeout": 10000,
+            "duration": 200,
+            "timeout": 3000,
             "wait_after": 0,
             "wait_before": 0,
             "wait_type": "fixed"
@@ -306,10 +306,13 @@
           "type": "click",
           "label": "Klik tombol Simpan",
           "params": {
-            "selector": "#contact_add_form > div.modal-footer > button.tw-dw-btn.tw-dw-btn-primary.tw-text-white, #btn-simpan, .btn-save, button[type='submit'], .submit-contact-form",
-            "wait_before": 0,
+            "selector": "#contact_add_form > div.modal-footer > button[type='submit'], #btn-simpan, .btn-save",
+            "selector_type": "css",
+            "force": true,
+            "timeout": 5000,
             "wait_after": 0,
-            "timeout": 10000
+            "wait_before": 0,
+            "wait_for_load_state": "none"
           },
           "on_error": "skip",
           "retry": {
@@ -322,11 +325,12 @@
           "type": "wait",
           "label": "Wait notifikasi / loading selesai",
           "params": {
-            "wait_type": "until_hidden",
+            "duration": 100,
             "selector": ".loading, .spinner, .modal-backdrop, .overlay",
-            "timeout": 10000,
+            "timeout": 5000,
+            "wait_after": 0,
             "wait_before": 0,
-            "wait_after": 0
+            "wait_type": "until_hidden"
           },
           "on_error": "skip",
           "retry": {
@@ -343,5 +347,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-26T12:16:18.349147",
-  "updated_at": "2026-07-27T00:03:46.897270"
+  "updated_at": "2026-07-27T20:22:56.849494"
 }
