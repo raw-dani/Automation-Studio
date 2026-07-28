@@ -35,13 +35,22 @@
         "data_source": "bidang"
       },
       "on_error": "skip",
-      "retry": {"max_retries": 2, "delay": 2000}
+      "retry": {
+        "max_retries": 2,
+        "delay": 2000
+      }
     },
     {
       "id": "step_3",
       "type": "wait",
       "label": "Wait sebelum input form",
-      "params": {"wait_type": "fixed", "duration": 1500}
+      "params": {
+        "wait_type": "fixed",
+        "duration": 200,
+        "timeout": 3000,
+        "wait_after": 0,
+        "wait_before": 0
+      }
     },
     {
       "id": "step_4",
@@ -49,7 +58,10 @@
       "label": "Klik tombol Tambah/Baru",
       "params": {
         "selector": "#btn-tambah",
-        "wait_before": 500
+        "selector_type": "css",
+        "timeout": 10000,
+        "wait_before": 500,
+        "wait_after": 0
       }
     },
     {
@@ -59,7 +71,9 @@
       "params": {
         "selector": "#pbt",
         "value": "{{data.PBT}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -69,7 +83,9 @@
       "params": {
         "selector": "#nib",
         "value": "{{data.NIB}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -79,7 +95,9 @@
       "params": {
         "selector": "#keadaan_tanah",
         "select_by": "label",
-        "select_value": "{{data.Keadaan Tanah}}"
+        "select_value": "{{data.Keadaan Tanah}}",
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -89,7 +107,9 @@
       "params": {
         "selector": "#tanda_batas",
         "value": "{{data.Tanda Batas}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -99,7 +119,9 @@
       "params": {
         "selector": "#penunjuk_batas",
         "value": "{{data.Penunjuk Batas}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -109,7 +131,9 @@
       "params": {
         "selector": "#hal_lain",
         "value": "{{data.Hal lain-lain}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -119,7 +143,9 @@
       "params": {
         "selector": "#nama_jalan",
         "value": "{{data.Nama Jalan}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -129,7 +155,9 @@
       "params": {
         "selector": "#nomor_jalan",
         "value": "{{data.Nomor Jalan}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -139,7 +167,9 @@
       "params": {
         "selector": "#alamat_tambahan",
         "value": "{{data.Alamat Tambahan}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -149,7 +179,9 @@
       "params": {
         "selector": "#kode_pos",
         "value": "{{data.Kode Pos}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -159,7 +191,9 @@
       "params": {
         "selector": "#penggunaan",
         "select_by": "label",
-        "select_value": "{{data.Penggunaan}}"
+        "select_value": "{{data.Penggunaan}}",
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -169,7 +203,9 @@
       "params": {
         "selector": "#pemanfaatan",
         "select_by": "label",
-        "select_value": "{{data.Pemanfaatan}}"
+        "select_value": "{{data.Pemanfaatan}}",
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -179,7 +215,9 @@
       "params": {
         "selector": "#metode_ukur",
         "value": "{{data.Metode Ukur}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
@@ -189,14 +227,22 @@
       "params": {
         "selector": "#akurasi_bidang",
         "value": "{{data.Akurasi Bidang}}",
-        "clear_first": true
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
       }
     },
     {
       "id": "step_19",
       "type": "wait",
       "label": "Wait sebelum submit",
-      "params": {"wait_type": "fixed", "duration": 1000}
+      "params": {
+        "wait_type": "fixed",
+        "duration": 200,
+        "timeout": 3000,
+        "wait_after": 0,
+        "wait_before": 0
+      }
     },
     {
       "id": "step_20",
@@ -204,7 +250,17 @@
       "label": "Klik tombol Simpan",
       "params": {
         "selector": "#btn-simpan",
-        "wait_before": 500
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 0,
+        "wait_before": 0
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
@@ -214,7 +270,14 @@
       "params": {
         "wait_type": "until_hidden",
         "selector": ".loading, .spinner",
-        "timeout": 10000
+        "timeout": 5000,
+        "wait_after": 0,
+        "wait_before": 0
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 2,
+        "delay": 500
       }
     }
   ]

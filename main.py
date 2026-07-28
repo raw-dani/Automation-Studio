@@ -37,6 +37,7 @@ from backend.actions.loop_action import LoopAction
 from backend.actions.if_else_action import IfElseAction
 from backend.actions.parallel_group_action import ParallelGroupAction
 from backend.actions.radio_select_action import RadioSelectAction
+from backend.actions.http_submit_action import HttpSubmitAction
 
 # Data Sources
 from backend.data_sources.excel_source import ExcelDataSource
@@ -102,6 +103,7 @@ def create_action_registry() -> ActionRegistry:
     registry.register(SelectDropdownAction())
     registry.register(RadioSelectAction())
     registry.register(UploadFileAction())
+    registry.register(HttpSubmitAction())
     registry.register(LoopAction())
     registry.register(IfElseAction())
     registry.register(ParallelGroupAction())

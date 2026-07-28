@@ -55,7 +55,7 @@ class WorkflowParser:
     """
     
     VALID_ACTIONS = {
-        "click", "input_text", "select", "select_dropdown", "select2", "radio_select",
+        "click", "http_submit", "input_text", "select", "select_dropdown", "select2", "radio_select",
         "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
     }
     

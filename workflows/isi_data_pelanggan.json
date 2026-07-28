@@ -303,16 +303,14 @@
         },
         {
           "id": "step_16",
-          "type": "click",
-          "label": "Klik tombol Simpan",
+          "type": "http_submit",
+          "label": "Submit form pelanggan via HTTP POST",
           "params": {
-            "selector": "#contact_add_form > div.modal-footer > button[type='submit'], #btn-simpan, .btn-save",
+            "form_selector": "#contact_add_form",
             "selector_type": "css",
-            "force": true,
-            "timeout": 5000,
+            "submit_selector": "#contact_add_form > div.modal-footer > button[type='submit']",
             "wait_after": 0,
-            "wait_before": 0,
-            "wait_for_load_state": "none"
+            "timeout": 10000
           },
           "on_error": "skip",
           "retry": {
