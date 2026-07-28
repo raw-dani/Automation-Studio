@@ -16,6 +16,7 @@ from PySide6.QtGui import QFont, QColor
 # Color scheme for action types (mirror dari workflow_editor)
 ACTION_COLORS = {
     "click": "#2196F3",
+    "http_submit": "#4CAF50",
     "input_text": "#9C27B0",
     "select": "#00BCD4",
     "select2": "#00BCD4",
@@ -218,7 +219,7 @@ class ChildStepItem(QFrame):
         # Type selector
         self._edit_type_combo = QComboBox()
         self._edit_type_combo.addItems([
-            "click", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "click", "http_submit", "input_text", "select", "select2", "select_dropdown", "radio_select",
             "wait", "upload_file", "navigate",
         ])
         self._edit_type_combo.setCurrentText(self.action_type)
@@ -514,7 +515,7 @@ class PropertiesPanel(QWidget):
         type_label = QLabel("Type:")
         self.type_combo = QComboBox()
         self.type_combo.addItems([
-            "click", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "click", "http_submit", "input_text", "select", "select2", "select_dropdown", "radio_select",
             "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
         ])
         self.type_combo.setCurrentText(action_type)
@@ -531,6 +532,13 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
             self._add_field("force", self.current_params.get("force", False))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
+
+        elif action_type == "http_submit":
+            self._add_field("form_selector", self.current_params.get("form_selector", ""))
+            self._add_field("selector_type", self.current_params.get("selector_type", "css"))
+            self._add_field("submit_selector", self.current_params.get("submit_selector", ""))
+            self._add_field("timeout", self.current_params.get("timeout", 10000))
+            self._add_field("wait_after", self.current_params.get("wait_after", 0))
 
         elif action_type == "input_text":
             self._add_field("selector", self.current_params.get("selector", ""))
