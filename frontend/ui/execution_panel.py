@@ -5,16 +5,18 @@ Dilengkapi: step list, resume, headless toggle, slow_mo slider, browser selector
 
 import asyncio
 import json
+import re
+import subprocess
 import urllib.request
 import urllib.error
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QProgressBar, QGroupBox, QLineEdit, QCheckBox, QSlider,
     QComboBox, QListWidget, QListWidgetItem, QScrollArea,
-    QFrame, QSplitter, QSizePolicy, QAbstractItemView, QMessageBox,
+    QFrame, QSplitter, QSizePolicy, QAbstractItemView,
 )
 from PySide6.QtCore import Qt, Signal, QThread, QTimer, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QPixmap, QPainter
@@ -681,9 +683,51 @@ class ExecutionPanel(QWidget):
     def _detect_browsers(self):
         """Scan for browsers with remote debugging enabled via CDP."""
         browsers = []
-        common_ports = [9222, 9223, 9229, 9221, 9220, 9333]
+        debug_ports = set()
 
-        for port in common_ports:
+        # Step 1: Read Chrome/Edge process command lines to find --remote-debugging-port
+        try:
+            result = subprocess.run(
+                ["wmic", "process", "where", "name='chrome.exe' OR name='msedge.exe' OR name='chromium.exe'",
+                 "get", "commandline", "/format:value", "/value"],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in result.stdout.split("\n"):
+                line = line.strip()
+                if line.startswith("CommandLine="):
+                    cmdline = line.split("=", 1)[1]
+                    # Extract --remote-debugging-port=XXXX
+                    m = re.search(r'--remote-debugging-port=(\d+)', cmdline)
+                    if m:
+                        debug_ports.add(int(m.group(1)))
+        except Exception:
+            pass
+
+        # Also try msedge.exe explicitly since wmic sometimes misses it
+        try:
+            result = subprocess.run(
+                ["wmic", "process", "where", "name='msedge.exe'",
+                 "get", "commandline", "/format:value", "/value"],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in result.stdout.split("\n"):
+                line = line.strip()
+                if line.startswith("CommandLine="):
+                    cmdline = line.split("=", 1)[1]
+                    m = re.search(r'--remote-debugging-port=(\d+)', cmdline)
+                    if m:
+                        debug_ports.add(int(m.group(1)))
+        except Exception:
+            pass
+
+        # Also try firefox (uses a different mechanism - check profile dir)
+        # Firefox CDP port is not standard; skip for now
+
+        # Step 2: Try connecting to discovered ports + common fallback ports
+        common_ports = [9222, 9223, 9229]
+        all_ports_tried = sorted(debug_ports) + [p for p in common_ports if p not in debug_ports]
+
+        for port in all_ports_tried:
             try:
                 url = f"http://localhost:{port}/json/version"
                 req = urllib.request.Request(url, headers={"User-Agent": "AutomationStudio"})
@@ -692,7 +736,6 @@ class ExecutionPanel(QWidget):
                     browser_str = data.get("Browser", "")
                     ws_url = data.get("webSocketDebuggerUrl", "")
                     if browser_str:
-                        # Determine browser type from version string
                         if "Chrome" in browser_str and "Edg" in browser_str:
                             btype = "Edge"
                         elif "Chrome" in browser_str or "Chromium" in browser_str:
@@ -708,32 +751,28 @@ class ExecutionPanel(QWidget):
                             "browser": browser_str,
                             "ws_url": ws_url,
                         })
+                        debug_ports.discard(port)
             except Exception:
                 continue
 
-        # Deduplicate by port
-        seen = set()
-        unique_browsers = []
-        for b in browsers:
-            if b["port"] not in seen:
-                seen.add(b["port"])
-                unique_browsers.append(b)
-
         # Update UI
-        if unique_browsers:
+        if browsers:
             self.detected_browser_label.setText(
                 "Found: " + ", ".join(
-                    f"{b['type']}:{b['port']}" for b in unique_browsers
+                    f"{b['type']}:{b['port']}" for b in browsers
                 )
             )
-            # Auto-select first found browser's CDP endpoint
-            first = unique_browsers[0]
+            first = browsers[0]
             self.cdp_endpoint_input.setText(first["ws_endpoint"])
             self.session_mode_combo.setCurrentText("connect")
             self._on_session_mode_changed("connect")
+        elif debug_ports:
+            self.detected_browser_label.setText(
+                "Chrome/Edge found with debug port but CDP not reachable. Try the port manually."
+            )
         else:
             self.detected_browser_label.setText(
-                "No CDP browser found. Launch Chrome with: --remote-debugging-port=9222"
+                "No CDP browser found. Launch Chrome/Edge with: --remote-debugging-port=9222"
             )
 
     def _on_session_mode_changed(self, mode: str):
