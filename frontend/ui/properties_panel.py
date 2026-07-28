@@ -807,7 +807,33 @@ class PropertiesPanel(QWidget):
     def add_child_step(self):
         """Tambah child step baru ke loop atau parallel_group."""
         from backend.core.action_registry import ActionRegistry
+        from backend.actions.click_action import ClickAction
+        from backend.actions.input_text_action import InputTextAction
+        from backend.actions.wait_action import WaitAction
+        from backend.actions.select_dropdown_action import SelectDropdownAction
+        from backend.actions.select_action import SelectAction
+        from backend.actions.select2_action import Select2Action
+        from backend.actions.radio_select_action import RadioSelectAction
+        from backend.actions.upload_file_action import UploadFileAction
+        from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.loop_action import LoopAction
+        from backend.actions.if_else_action import IfElseAction
+        from backend.actions.parallel_group_action import ParallelGroupAction
+        from backend.actions.navigate_action import NavigateAction
         registry = ActionRegistry()
+        registry.register(ClickAction())
+        registry.register(InputTextAction())
+        registry.register(WaitAction())
+        registry.register(SelectDropdownAction())
+        registry.register(SelectAction())
+        registry.register(Select2Action())
+        registry.register(RadioSelectAction())
+        registry.register(UploadFileAction())
+        registry.register(HttpSubmitAction())
+        registry.register(LoopAction())
+        registry.register(IfElseAction())
+        registry.register(ParallelGroupAction())
+        registry.register(NavigateAction())
         actions = registry.get_action_descriptions()
         first_action = actions[0]["name"] if actions else "click"
 

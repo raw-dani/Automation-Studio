@@ -513,12 +513,32 @@ class WorkflowEditor(QWidget):
         step = self._find_step(self.workflow.steps, step_id)
         if step:
             step.type = new_type
-            from backend.core.action_registry import ActionRegistry
-            registry = ActionRegistry()
-            action = registry.get(new_type)
-            if action:
-                step.params = action.default_params.copy()
-                step.label = step.label or new_type.replace("_", " ").title()
+        from backend.core.action_registry import ActionRegistry
+        from backend.actions.click_action import ClickAction
+        from backend.actions.input_text_action import InputTextAction
+        from backend.actions.wait_action import WaitAction
+        from backend.actions.select_dropdown_action import SelectDropdownAction
+        from backend.actions.radio_select_action import RadioSelectAction
+        from backend.actions.upload_file_action import UploadFileAction
+        from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.loop_action import LoopAction
+        from backend.actions.if_else_action import IfElseAction
+        from backend.actions.parallel_group_action import ParallelGroupAction
+        registry = ActionRegistry()
+        registry.register(ClickAction())
+        registry.register(InputTextAction())
+        registry.register(WaitAction())
+        registry.register(SelectDropdownAction())
+        registry.register(RadioSelectAction())
+        registry.register(UploadFileAction())
+        registry.register(HttpSubmitAction())
+        registry.register(LoopAction())
+        registry.register(IfElseAction())
+        registry.register(ParallelGroupAction())
+        action = registry.get(new_type)
+        if action:
+            step.params = action.default_params.copy()
+            step.label = step.label or new_type.replace("_", " ").title()
 
         self._update_tree_item(step_id)
         self.nodes_changed.emit()
@@ -530,7 +550,33 @@ class WorkflowEditor(QWidget):
         self._capture_state()
 
         from backend.core.action_registry import ActionRegistry
+        from backend.actions.click_action import ClickAction
+        from backend.actions.input_text_action import InputTextAction
+        from backend.actions.wait_action import WaitAction
+        from backend.actions.select_dropdown_action import SelectDropdownAction
+        from backend.actions.radio_select_action import RadioSelectAction
+        from backend.actions.upload_file_action import UploadFileAction
+        from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.loop_action import LoopAction
+        from backend.actions.if_else_action import IfElseAction
+        from backend.actions.parallel_group_action import ParallelGroupAction
+        from backend.actions.select_action import SelectAction
+        from backend.actions.select2_action import Select2Action
+        from backend.actions.navigate_action import NavigateAction
         registry = ActionRegistry()
+        registry.register(ClickAction())
+        registry.register(InputTextAction())
+        registry.register(WaitAction())
+        registry.register(SelectDropdownAction())
+        registry.register(RadioSelectAction())
+        registry.register(UploadFileAction())
+        registry.register(HttpSubmitAction())
+        registry.register(LoopAction())
+        registry.register(IfElseAction())
+        registry.register(ParallelGroupAction())
+        registry.register(SelectAction())
+        registry.register(Select2Action())
+        registry.register(NavigateAction())
         action = registry.get(action_type)
         default_params = action.default_params.copy() if action else {}
         if params:

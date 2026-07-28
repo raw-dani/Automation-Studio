@@ -40,6 +40,7 @@ from backend.actions.select_action import SelectAction
 from backend.actions.select2_action import Select2Action
 from backend.actions.parallel_group_action import ParallelGroupAction
 from backend.actions.radio_select_action import RadioSelectAction
+from backend.actions.http_submit_action import HttpSubmitAction
 
 
 RECENT_FILES_MAX = 5
@@ -139,6 +140,7 @@ class MainWindow(QMainWindow):
         registry.register(Select2Action())
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
+        registry.register(HttpSubmitAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(NavigateAction())

@@ -36,6 +36,8 @@ from backend.actions.navigate_action import NavigateAction
 from backend.actions.select_action import SelectAction
 from backend.actions.select2_action import Select2Action
 from backend.actions.radio_select_action import RadioSelectAction
+from backend.actions.http_submit_action import HttpSubmitAction
+from backend.actions.parallel_group_action import ParallelGroupAction
 
 
 def create_app(config: dict = None) -> FastAPI:
@@ -55,6 +57,8 @@ def create_app(config: dict = None) -> FastAPI:
     action_registry.register(LoopAction())
     action_registry.register(IfElseAction())
     action_registry.register(NavigateAction())
+    action_registry.register(HttpSubmitAction())
+    action_registry.register(ParallelGroupAction())
     
     engine = ExecutionEngine(action_registry, config)
     parser = WorkflowParser()
@@ -242,6 +246,9 @@ async def list_actions():
     registry.register(LoopAction())
     registry.register(IfElseAction())
     registry.register(NavigateAction())
+    registry.register(RadioSelectAction())
+    registry.register(HttpSubmitAction())
+    registry.register(ParallelGroupAction())
     
     return registry.get_action_descriptions()
 
