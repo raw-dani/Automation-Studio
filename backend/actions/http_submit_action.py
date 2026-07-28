@@ -53,16 +53,17 @@ class HttpSubmitAction(BaseAction):
             await asyncio.sleep(wait_after / 1000)
 
         try:
-            result = await page.evaluate("""async (formSel, submitSel, extra) => {
+            result = await page.evaluate("""async (args) => {
+                const formSel = args.formSel;
+                const submitSel = args.submitSel;
+                const extra = args.extra;
                 const form = document.querySelector(formSel);
                 if (!form) return {error: 'Form not found: ' + formSel};
 
                 const fd = new FormData(form);
-                const token = fd.get('_token') || '';
 
                 const data = {};
                 for (const [k, v] of fd.entries()) {
-                    if (k === '_token') continue;
                     if (data[k] !== undefined) {
                         if (!Array.isArray(data[k])) data[k] = [data[k]];
                         data[k].push(v);
@@ -94,7 +95,7 @@ class HttpSubmitAction(BaseAction):
                 } catch (e) {
                     return {error: 'Fetch failed: ' + e.message};
                 }
-            }""", form_selector, submit_selector, extra_data)
+            }""", {"formSel": form_selector, "submitSel": submit_selector, "extra": extra_data})
 
             if "error" in result:
                 return ActionResult(
