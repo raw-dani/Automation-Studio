@@ -4,14 +4,17 @@ Dilengkapi: step list, resume, headless toggle, slow_mo slider, browser selector
 """
 
 import asyncio
-from typing import Optional
+import json
+import urllib.request
+import urllib.error
+from typing import Optional, List
 from datetime import datetime
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QProgressBar, QGroupBox, QLineEdit, QCheckBox, QSlider,
     QComboBox, QListWidget, QListWidgetItem, QScrollArea,
-    QFrame, QSplitter, QSizePolicy, QAbstractItemView,
+    QFrame, QSplitter, QSizePolicy, QAbstractItemView, QMessageBox,
 )
 from PySide6.QtCore import Qt, Signal, QThread, QTimer, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QPixmap, QPainter
@@ -296,6 +299,27 @@ class ExecutionPanel(QWidget):
         self.session_details_row.addWidget(self.cdp_endpoint_input)
 
         settings_layout.addLayout(self.session_details_row)
+
+        # Row: Detect Browser + Selected browser info
+        self.browser_detect_row = QHBoxLayout()
+
+        self.detect_browser_btn = QPushButton("🔍 Detect Browsers")
+        self.detect_browser_btn.setStyleSheet("""
+            QPushButton {
+                background: #2196F3; color: white; padding: 5px 12px;
+                border-radius: 3px; font-size: 10px; font-weight: bold;
+            }
+            QPushButton:hover { background: #1976D2; }
+        """)
+        self.detect_browser_btn.clicked.connect(self._detect_browsers)
+        self.browser_detect_row.addWidget(self.detect_browser_btn)
+
+        self.detected_browser_label = QLabel("No browser detected")
+        self.detected_browser_label.setStyleSheet("color: #999; font-size: 10px;")
+        self.browser_detect_row.addWidget(self.detected_browser_label)
+
+        self.browser_detect_row.addStretch()
+        settings_layout.addLayout(self.browser_detect_row)
 
         # Update visibility based on default mode
         self._on_session_mode_changed("persistent")
@@ -653,6 +677,64 @@ class ExecutionPanel(QWidget):
         self.continue_btn.setEnabled(False)
         self.engine.resume()
         self.status_label.setText("Running...")
+
+    def _detect_browsers(self):
+        """Scan for browsers with remote debugging enabled via CDP."""
+        browsers = []
+        common_ports = [9222, 9223, 9229, 9221, 9220, 9333]
+
+        for port in common_ports:
+            try:
+                url = f"http://localhost:{port}/json/version"
+                req = urllib.request.Request(url, headers={"User-Agent": "AutomationStudio"})
+                with urllib.request.urlopen(req, timeout=1) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    browser_str = data.get("Browser", "")
+                    ws_url = data.get("webSocketDebuggerUrl", "")
+                    if browser_str:
+                        # Determine browser type from version string
+                        if "Chrome" in browser_str and "Edg" in browser_str:
+                            btype = "Edge"
+                        elif "Chrome" in browser_str or "Chromium" in browser_str:
+                            btype = "Chromium"
+                        elif "Firefox" in browser_str:
+                            btype = "Firefox"
+                        else:
+                            btype = "Browser"
+                        browsers.append({
+                            "type": btype,
+                            "port": port,
+                            "ws_endpoint": f"http://localhost:{port}",
+                            "browser": browser_str,
+                            "ws_url": ws_url,
+                        })
+            except Exception:
+                continue
+
+        # Deduplicate by port
+        seen = set()
+        unique_browsers = []
+        for b in browsers:
+            if b["port"] not in seen:
+                seen.add(b["port"])
+                unique_browsers.append(b)
+
+        # Update UI
+        if unique_browsers:
+            self.detected_browser_label.setText(
+                "Found: " + ", ".join(
+                    f"{b['type']}:{b['port']}" for b in unique_browsers
+                )
+            )
+            # Auto-select first found browser's CDP endpoint
+            first = unique_browsers[0]
+            self.cdp_endpoint_input.setText(first["ws_endpoint"])
+            self.session_mode_combo.setCurrentText("connect")
+            self._on_session_mode_changed("connect")
+        else:
+            self.detected_browser_label.setText(
+                "No CDP browser found. Launch Chrome with: --remote-debugging-port=9222"
+            )
 
     def _on_session_mode_changed(self, mode: str):
         """Handle session mode change - show/hide relevant config fields."""
