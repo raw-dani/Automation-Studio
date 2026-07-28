@@ -1,19 +1,14 @@
 {
   "id": "workflow_isi_data_pemilik_gu1",
   "name": "Isi Data Pemilik - LAYOUT GU 1 (Optimized)",
-  "version": "2.0",
-  "description": "Workflow untuk mengisi data pemilik/hak dari file LAYOUT MELENGKAPI BERKAS GU 1.xlsx - Dengan parallel group execution untuk performa lebih cepat",
+  "version": "3.0",
+  "url": "https://skb.atrbpn.go.id/BerkasSaya#",
   "data_source": {
-    "type": "excel",
     "config": {
       "file_path": "data/LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
       "sheet": "Sheet1"
-    }
-  },
-  "monitoring": {
-    "screenshot_on_error": true,
-    "screenshot_on_step": false,
-    "log_level": "INFO"
+    },
+    "type": "excel"
   },
   "steps": [
     {
@@ -23,7 +18,12 @@
       "params": {
         "wait_type": "until_visible",
         "selector": "body",
-        "timeout": 15000
+        "timeout": 60000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
@@ -35,56 +35,91 @@
         "data_source": "pemilik"
       },
       "on_error": "skip",
-      "retry": {"max_retries": 2, "delay": 2000}
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
     },
     {
       "id": "step_3",
-      "type": "wait",
-      "label": "Wait sebelum input",
-      "params": {"wait_type": "fixed", "duration": 1500}
+      "type": "click",
+      "label": "Klik tab Entri Berkas",
+      "params": {
+        "selector": "#profile-tab",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
     },
     {
       "id": "step_4",
-      "type": "click",
-      "label": "Klik tombol Tambah/Baru",
+      "type": "wait",
+      "label": "Tunggu form Entri Berkas siap",
       "params": {
-        "selector": "#btn-tambah",
-        "wait_before": 500
+        "wait_type": "until_visible",
+        "selector": "#inputpemohonplaceholder",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
       "id": "step_5",
       "type": "parallel_group",
-      "label": "Isi semua field form secara bersamaan",
+      "label": "Isi semua field form pemilik secara bersamaan",
       "params": {
         "timeout": 30000,
         "on_error": "skip"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       },
       "steps": [
         {
           "id": "step_5a",
           "type": "input_text",
-          "label": "Input Nama Pemilik",
-          "params": {
-            "selector": "#nama",
-            "value": "{{data.NAMA}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          }
-        },
-        {
-          "id": "step_5b",
-          "type": "input_text",
           "label": "Input NIK",
           "params": {
-            "selector": "#nik",
+            "selector": "#tNIK",
             "value": "{{data.NIK}}",
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
             "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_5b",
+          "type": "input_text",
+          "label": "Input Nama Pemilik",
+          "params": {
+            "selector": "#tNAMA_LENGKAP",
+            "value": "{{data.NAMA}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
           }
         },
         {
@@ -92,12 +127,17 @@
           "type": "input_text",
           "label": "Input Alamat",
           "params": {
-            "selector": "#alamat",
+            "selector": "#tALAMAT",
             "value": "{{data.ALAMAT}}",
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
             "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
           }
         },
         {
@@ -105,24 +145,35 @@
           "type": "input_text",
           "label": "Input Tempat Lahir",
           "params": {
-            "selector": "#tempat_lahir",
+            "selector": "#tTEMPAT_LAHIR",
             "value": "{{data.TEMPAT LAHIR}}",
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
             "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
           }
         },
         {
           "id": "step_5e",
-          "type": "select_dropdown",
-          "label": "Pilih Status Pemilik",
+          "type": "input_text",
+          "label": "Input Status Kawin",
           "params": {
-            "selector": "#status",
-            "select_by": "label",
-            "select_value": "{{data.STATUS}}",
+            "selector": "#tSTATUS_KAWIN",
+            "value": "{{data.STATUS}}",
+            "clear_first": true,
+            "use_fill": true,
             "wait_before": 0,
             "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
           }
         }
       ]
@@ -131,16 +182,33 @@
       "id": "step_6",
       "type": "wait",
       "label": "Wait sebelum submit",
-      "params": {"wait_type": "fixed", "duration": 1000}
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
     },
     {
       "id": "step_7",
       "type": "click",
-      "label": "Klik tombol Simpan",
+      "label": "Klik tombol Tambah (Simpan Pemilik)",
       "params": {
-        "selector": "#btn-simpan",
+        "selector": "#btn-tambah",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
         "wait_before": 0,
         "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
@@ -151,7 +219,19 @@
         "wait_type": "until_hidden",
         "selector": ".loading, .spinner",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     }
-  ]
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "created_at": "2026-07-28T20:34:38.551675",
+  "updated_at": "2026-07-28T22:33:00.000000"
 }
