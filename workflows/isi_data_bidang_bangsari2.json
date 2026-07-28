@@ -2,18 +2,13 @@
   "id": "workflow_isi_data_bidang_bangsari2",
   "name": "Isi Data Bidang - DESA BANGUNSARI 2",
   "version": "1.0",
-  "description": "Workflow untuk mengisi data bidang tanah dari file LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx",
+  "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
   "data_source": {
-    "type": "excel",
     "config": {
       "file_path": "data/LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx",
       "sheet": "Sheet1"
-    }
-  },
-  "monitoring": {
-    "screenshot_on_error": true,
-    "screenshot_on_step": false,
-    "log_level": "INFO"
+    },
+    "type": "excel"
   },
   "steps": [
     {
@@ -24,10 +19,32 @@
         "wait_type": "until_visible",
         "selector": "body",
         "timeout": 15000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
       "id": "step_2",
+      "type": "wait",
+      "label": "Tunggu proses login selesai",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 3000,
+        "timeout": 10000,
+        "wait_after": 0,
+        "wait_before": 0
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_3",
       "type": "loop",
       "label": "Loop setiap baris bidang tanah",
       "params": {
@@ -36,12 +53,12 @@
       },
       "on_error": "skip",
       "retry": {
-        "max_retries": 2,
+        "max_retries": 3,
         "delay": 2000
       }
     },
     {
-      "id": "step_3",
+      "id": "step_4",
       "type": "wait",
       "label": "Wait sebelum input form",
       "params": {
@@ -50,10 +67,15 @@
         "timeout": 3000,
         "wait_after": 0,
         "wait_before": 0
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_4",
+      "id": "step_5",
       "type": "click",
       "label": "Klik tombol Tambah/Baru",
       "params": {
@@ -62,10 +84,15 @@
         "timeout": 10000,
         "wait_before": 500,
         "wait_after": 0
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_5",
+      "id": "step_6",
       "type": "input_text",
       "label": "Input PBT",
       "params": {
@@ -74,10 +101,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_6",
+      "id": "step_7",
       "type": "input_text",
       "label": "Input NIB",
       "params": {
@@ -86,10 +118,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_7",
+      "id": "step_8",
       "type": "select_dropdown",
       "label": "Pilih Keadaan Tanah",
       "params": {
@@ -98,10 +135,15 @@
         "select_value": "{{data.Keadaan Tanah}}",
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_8",
+      "id": "step_9",
       "type": "input_text",
       "label": "Input Tanda Batas",
       "params": {
@@ -110,10 +152,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_9",
+      "id": "step_10",
       "type": "input_text",
       "label": "Input Penunjuk Batas",
       "params": {
@@ -122,10 +169,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_10",
+      "id": "step_11",
       "type": "input_text",
       "label": "Input Hal lain-lain",
       "params": {
@@ -134,10 +186,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_11",
+      "id": "step_12",
       "type": "input_text",
       "label": "Input Nama Jalan",
       "params": {
@@ -146,10 +203,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_12",
+      "id": "step_13",
       "type": "input_text",
       "label": "Input Nomor Jalan",
       "params": {
@@ -158,10 +220,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_13",
+      "id": "step_14",
       "type": "input_text",
       "label": "Input Alamat Tambahan",
       "params": {
@@ -170,10 +237,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_14",
+      "id": "step_15",
       "type": "input_text",
       "label": "Input Kode Pos",
       "params": {
@@ -182,10 +254,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_15",
+      "id": "step_16",
       "type": "select_dropdown",
       "label": "Pilih Penggunaan",
       "params": {
@@ -194,10 +271,15 @@
         "select_value": "{{data.Penggunaan}}",
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_16",
+      "id": "step_17",
       "type": "select_dropdown",
       "label": "Pilih Pemanfaatan",
       "params": {
@@ -206,10 +288,15 @@
         "select_value": "{{data.Pemanfaatan}}",
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_17",
+      "id": "step_18",
       "type": "input_text",
       "label": "Input Metode Ukur",
       "params": {
@@ -218,10 +305,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_18",
+      "id": "step_19",
       "type": "input_text",
       "label": "Input Akurasi Bidang",
       "params": {
@@ -230,10 +322,15 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_19",
+      "id": "step_20",
       "type": "wait",
       "label": "Wait sebelum submit",
       "params": {
@@ -242,10 +339,15 @@
         "timeout": 3000,
         "wait_after": 0,
         "wait_before": 0
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
       }
     },
     {
-      "id": "step_20",
+      "id": "step_21",
       "type": "click",
       "label": "Klik tombol Simpan",
       "params": {
@@ -264,7 +366,7 @@
       }
     },
     {
-      "id": "step_21",
+      "id": "step_22",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {
@@ -276,9 +378,16 @@
       },
       "on_error": "skip",
       "retry": {
-        "max_retries": 2,
-        "delay": 500
+        "max_retries": 3,
+        "delay": 2000
       }
     }
-  ]
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "created_at": "2026-07-28T21:04:26.624510",
+  "updated_at": "2026-07-28T21:05:44.436394"
 }
