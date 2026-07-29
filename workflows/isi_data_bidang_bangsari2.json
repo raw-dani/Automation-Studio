@@ -112,10 +112,10 @@
     {
       "id": "step_7",
       "type": "wait",
-      "label": "Tunggu hasil pencarian muncul",
+      "label": "Tunggu container Peta Bidang",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#datatable tbody tr",
+        "selector": "#pbtplaceholder",
         "timeout": 10000,
         "wait_for_load_state": "none"
       },
@@ -128,11 +128,12 @@
     {
       "id": "step_8",
       "type": "wait",
-      "label": "Tunggu hasil pencarian muncul",
+      "label": "Tunggu hasil Peta Bidang muncul",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#datatable tbody tr",
-        "timeout": 10000
+        "selector": "#pbtplaceholder tr",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
@@ -143,9 +144,9 @@
     {
       "id": "step_9",
       "type": "click",
-      "label": "Klik row bidang untuk edit",
+      "label": "Klik row Peta Bidang untuk edit",
       "params": {
-        "selector": "#datatable tbody tr:first-child",
+        "selector": "#pbtplaceholder tr:first-child",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
