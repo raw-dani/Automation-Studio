@@ -93,14 +93,14 @@
     },
     {
       "id": "step_6",
-      "type": "input_text",
-      "label": "Cari NIB Bidang",
+      "type": "click",
+      "label": "Klik tombol Cari",
       "params": {
-        "selector": "#carinib",
-        "value": "{{data.NIB}}",
-        "clear_first": true,
+        "selector": "#find-btn",
         "selector_type": "css",
-        "timeout": 10000
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
@@ -110,13 +110,12 @@
     },
     {
       "id": "step_7",
-      "type": "click",
-      "label": "Klik tombol Cari Bidang",
+      "type": "wait",
+      "label": "Tunggu hasil pencarian muncul",
       "params": {
-        "selector": "#frmCariBidang button[type=submit]",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
+        "wait_type": "until_visible",
+        "selector": "#datatable tbody tr",
+        "timeout": 10000,
         "wait_for_load_state": "none"
       },
       "on_error": "stop",
