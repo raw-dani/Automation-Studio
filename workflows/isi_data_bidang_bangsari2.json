@@ -78,11 +78,12 @@
     {
       "id": "step_5",
       "type": "wait",
-      "label": "Tunggu form Lengkapi Bidang siap",
+      "label": "Tunggu field Nomor PBT siap",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#frmLengkapiBidang",
-        "timeout": 10000
+        "selector": "#nomorpbt",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
