@@ -63,7 +63,7 @@
       "type": "click",
       "label": "Pilih Desa BANGUNSARI",
       "params": {
-        "selector": "//li[contains(@class,'select2-results__option') and contains(., 'BANGUNSARI')],
+        "selector": "//li[contains(@class,'select2-results__option') and contains(., 'BANGUNSARI')]",
         "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
