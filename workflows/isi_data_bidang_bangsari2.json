@@ -5,7 +5,7 @@
   "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
   "data_source": {
     "config": {
-      "file_path": "data/LAYOUT MELENGKAPI BIDANG DESA BANGUNSARI 2.xlsx",
+      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
       "sheet": "Sheet1"
     },
     "type": "excel"
@@ -61,10 +61,10 @@
     {
       "id": "step_4",
       "type": "click",
-      "label": "Klik dropdown Pilih Desa / Kelurahan",
+      "label": "Pilih Desa BANGUNSARI",
       "params": {
-        "selector": "#select2-desa-container",
-        "selector_type": "css",
+        "selector": "//li[contains(@class,'select2-results__option') and contains(., 'BANGUNSARI')],
+        "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none"
@@ -432,5 +432,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T21:04:26.624510",
-  "updated_at": "2026-07-29T19:58:48.274482"
+  "updated_at": "2026-07-29T21:07:39.761574"
 }
