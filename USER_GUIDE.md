@@ -814,6 +814,10 @@ Atau buat workflow baru dengan struktur:
 #### 3. Langkah-langkah Penggunaan
 
 1. **Login Manual**: Buka browser, login ke aplikasi, pastikan session aktif
+   - Buka Chrome/Edge dengan remote debugging:
+     ```bash
+     cmd /c start chrome.exe --remote-debugging-port=9222
+     ```
 2. **Jalankan Workflow**: Klik **Start** di Automation Studio
 3. **Workflow otomatis**:
    - Wait browser siap
