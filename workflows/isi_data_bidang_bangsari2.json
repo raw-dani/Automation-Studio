@@ -128,10 +128,10 @@
     {
       "id": "step_8",
       "type": "click",
-      "label": "Klik row Peta Bidang pertama",
+      "label": "Klik row Peta Bidang sesuai data",
       "params": {
-        "selector": "#pbtplaceholder tr:first-child",
-        "selector_type": "css",
+        "selector": "//table[@id='pbtplaceholder']//tr[contains(., '{{data.PBT}}')]",
+        "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
