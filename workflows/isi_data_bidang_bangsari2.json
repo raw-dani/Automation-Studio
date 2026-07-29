@@ -127,13 +127,15 @@
     },
     {
       "id": "step_8",
-      "type": "wait",
-      "label": "Tunggu hasil Peta Bidang muncul",
+      "type": "click",
+      "label": "Klik row Peta Bidang pertama",
       "params": {
-        "wait_type": "until_visible",
-        "selector": "#pbtplaceholder tr",
-        "timeout": 10000,
-        "wait_for_load_state": "none"
+        "selector": "#pbtplaceholder tr:first-child",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
       },
       "on_error": "stop",
       "retry": {
@@ -143,15 +145,13 @@
     },
     {
       "id": "step_9",
-      "type": "click",
-      "label": "Klik row Peta Bidang untuk edit",
+      "type": "wait",
+      "label": "Tunggu form Lengkapi Bidang terisi",
       "params": {
-        "selector": "#pbtplaceholder tr:first-child",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
-        "wait_after": 500
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000,
+        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
