@@ -27,7 +27,8 @@ Automation Studio adalah aplikasi otomasi modular berbasis Python yang memungkin
 ### 🎯 Fitur Utama
 
 - ✅ **Visual Workflow Builder** - Drag & drop tanpa coding
-- ✅ **7 Actions** - Click, Input Text, Select Dropdown, Upload File, Wait, Loop, If Else
+- ✅ **10+ Actions** - Click, Input Text, Select Dropdown, Upload File, Wait, Loop, If Else, HTTP Submit, Radio Select, Parallel Group
+- ✅ **Browser Session Reuse (CDP Detection)** - Detect running browsers with remote debugging to reuse existing login sessions
 - ✅ **4 Data Sources** - Excel, CSV, Database (MySQL/PostgreSQL/SQLite), REST API
 - ✅ **Monitoring Real-time** - Log, screenshot error, progress tracking
 - ✅ **Resume on Failure** - Lanjutkan dari step terakhir jika gagal
@@ -185,6 +186,33 @@ python -m uvicorn backend.api.routes:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 Akses documentation: http://localhost:8000/docs
+
+---
+
+### 🔍 Mode 4: Detect Browser & Reuse Session (CDP)
+
+Jika Anda sudah login di browser dan ingin workflow menggunakan sesi login tersebut (tanpa perlu login ulang), gunakan fitur **Browser Detection**:
+
+#### Syarat:
+Browser harus dijalankan dengan flag **remote debugging**:
+```bash
+# Chrome
+chrome.exe --remote-debugging-port=9222
+
+# Edge
+msedge.exe --remote-debugging-port=9222
+```
+
+#### Cara Menggunakan:
+1. Buka browser Chrome/Edge yang sudah login
+2. Pastikan browser berjalan dengan remote debugging port
+3. Buka Automation Studio
+4. Di panel **Execution**, klik tombol **🔍 Detect Browsers**
+5. Browser yang terdeteksi akan muncul, dengan endpoint CDP-nya
+6. Pilih browser yang terdeteksi → endpoint CDP otomatis terisi
+7. Klik **Start** untuk menjalankan workflow
+
+Workflow akan terhubung ke browser yang sudah login dan langsung menjalankan aksi tanpa perlu login ulang.
 
 ---
 
@@ -523,6 +551,34 @@ Cek koneksi database:
 # Test via CLI
 python -X utf8 main.py test-db --dialect mysql --host localhost --database mydb --query "SELECT 1"
 ```
+
+#### Browser Detection tidak menemukan browser
+
+**Penyebab:** Browser tidak dijalankan dengan flag `--remote-debugging-port`.
+
+**Solusi:**
+1. Tutup semua instance Chrome/Edge
+2. Buka browser dengan remote debugging port:
+   ```bash
+   # Chrome
+   chrome.exe --remote-debugging-port=9222
+   
+   # Edge
+   msedge.exe --remote-debugging-port=9222
+   ```
+3. Login ke aplikasi yang dituju
+4. Kembali ke Automation Studio dan klik **🔍 Detect Browsers**
+
+Atau, jika mengalami masalah dengan CDP detection:
+- Pastikan tidak ada firewall yang memblokir localhost
+- Coba port lain (9223, 9229) jika 9222 sibuk
+- Cek apakah browser sudah benar-benar berjalan sebelum deteksi
+
+#### Workflow gagal dengan HTTP 419 (CSRF mismatch)
+
+Jika step `http_submit` gagal dengan error CSRF token mismatch:
+- Pastikan form memiliki field `_token` yang ikut terkirim dalam POST body
+- Cek apakah session cookie browser aktif dan valid
 
 ---
 
@@ -916,7 +972,8 @@ A: Ya, lihat dokumentasi developer di `PROJECT_PLAN.md` untuk membuat custom act
 
 ### v1.0.0 (Juli 2026)
 - ✅ Initial release
-- ✅ 7 actions (Click, Input Text, Select Dropdown, Upload File, Wait, Loop, If Else)
+- ✅ 10+ actions (Click, Input Text, Select Dropdown, Upload File, Wait, Loop, If Else, HTTP Submit, Radio Select, Parallel Group)
+- ✅ Browser Detection (CDP) for session reuse
 - ✅ 4 data sources (Excel, CSV, Database, API)
 - ✅ Desktop GUI dengan PySide6
 - ✅ REST API dengan FastAPI
