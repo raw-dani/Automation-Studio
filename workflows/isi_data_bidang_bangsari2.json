@@ -61,11 +61,11 @@
     {
       "id": "step_4",
       "type": "select_dropdown",
-      "label": "Pilih Desa BANGUNSARI",
+      "label": "Pilih Desa (dari data)",
       "params": {
         "selector": "#desa",
         "select_by": "label",
-        "select_value": "BANGUNSARI",
+        "select_value": "{{data.ALAMAT}}",
         "selector_type": "css",
         "timeout": 10000
       },
