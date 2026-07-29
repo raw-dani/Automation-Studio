@@ -682,15 +682,28 @@ class ExecutionPanel(QWidget):
         """Scan for browsers with remote debugging enabled via CDP."""
         browsers = []
         common_ports = [9222, 9223, 9229, 9221, 9224, 9225, 9226, 9227, 9228, 9333]
+        errors = []
 
         for port in common_ports:
+            # First check if port is open at socket level
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1)
+            try:
+                sock.connect(("127.0.0.1", port))
+                sock.close()
+            except (socket.timeout, ConnectionRefusedError, OSError):
+                sock.close()
+                continue
+
+            # Port is open — try the CDP HTTP endpoint
             try:
                 url = "http://127.0.0.1:{}/json/version".format(port)
                 req = urllib.request.Request(url, headers={
                     "User-Agent": "AutomationStudio",
                     "Accept": "application/json",
                 })
-                with urllib.request.urlopen(req, timeout=2) as resp:
+                with urllib.request.urlopen(req, timeout=3) as resp:
                     raw = resp.read().decode("utf-8", errors="replace")
                     data = json.loads(raw)
                     browser_str = data.get("Browser", "")
@@ -712,7 +725,7 @@ class ExecutionPanel(QWidget):
                             "browser": browser_str,
                         })
             except urllib.error.HTTPError as e:
-                if e.code == 401 or e.code == 403:
+                if e.code in (401, 403):
                     browsers.append({
                         "type": "Browser (auth required)",
                         "port": port,
@@ -720,7 +733,8 @@ class ExecutionPanel(QWidget):
                         "browser": "unknown (auth)",
                     })
                 continue
-            except Exception:
+            except Exception as e:
+                errors.append("port {}: {}".format(port, str(e)[:80]))
                 continue
 
         if browsers:
@@ -733,12 +747,15 @@ class ExecutionPanel(QWidget):
             self.cdp_endpoint_input.setText(first["ws_endpoint"])
             self.session_mode_combo.setCurrentText("connect")
             self._on_session_mode_changed("connect")
+        elif errors:
+            self.detected_browser_label.setText(
+                "CDP ports are open but HTTP failed:\n" + "\n".join(errors[:3])
+            )
         else:
             self.detected_browser_label.setText(
                 "No CDP browser found.\n"
                 "Launch Chrome with:\n"
-                "  cmd /c start chrome.exe --remote-debugging-port=9222\n"
-                "Or ensure Chrome was closed and restarted with CDP enabled."
+                "  cmd /c start chrome.exe --remote-debugging-port=9222"
             )
 
     def _on_session_mode_changed(self, mode: str):
