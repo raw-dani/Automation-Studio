@@ -197,10 +197,10 @@ Jika Anda sudah login di browser dan ingin workflow menggunakan sesi login terse
 Browser harus dijalankan dengan flag **remote debugging**:
 ```bash
 # Chrome
-chrome.exe --remote-debugging-port=9222
+cmd /c start chrome.exe --remote-debugging-port=9222
 
 # Edge
-msedge.exe --remote-debugging-port=9222
+cmd /c start msedge.exe --remote-debugging-port=9222
 ```
 
 #### Cara Menggunakan:
@@ -554,25 +554,26 @@ python -X utf8 main.py test-db --dialect mysql --host localhost --database mydb 
 
 #### Browser Detection tidak menemukan browser
 
-**Penyebab:** Browser tidak dijalankan dengan flag `--remote-debugging-port`.
+**Penyebab paling umum:** Browser sudah berjalan sebelum `--remote-debugging-port` ditambahkan. Chrome mengabaikan flag ini jika instance yang sama sudah berjalan.
 
-**Solusi:**
-1. Tutup semua instance Chrome/Edge
-2. Buka browser dengan remote debugging port:
-   ```bash
-   # Chrome
-   chrome.exe --remote-debugging-port=9222
-   
-   # Edge
-   msedge.exe --remote-debugging-port=9222
+**Solusi (ikuti urutan ini):**
+1. **Tutup semua** instance Chrome/Edge (cek Task Manager → `chrome.exe` → End Task)
+2. Buka terminal (cmd) dan jalankan:
    ```
-3. Login ke aplikasi yang dituju
+   cmd /c start chrome.exe --remote-debugging-port=9222
+   ```
+3. Tunggu Chrome muncul, lalu **login** ke aplikasi target
 4. Kembali ke Automation Studio dan klik **🔍 Detect Browsers**
 
-Atau, jika mengalami masalah dengan CDP detection:
-- Pastikan tidak ada firewall yang memblokir localhost
-- Coba port lain (9223, 9229) jika 9222 sibuk
-- Cek apakah browser sudah benar-benar berjalan sebelum deteksi
+**Jika masih tidak terdeteksi:**
+- Pastikan `127.0.0.1` (IPv4) digunakan, bukan `localhost` (bisa resolusi ke IPv6 `::1` yang gagal)
+- Di Task Manager, pastikan `chrome.exe` benar-benar berjalan
+- Coba cek manual: buka browser dan buka `http://127.0.0.1:9222/json/version` — jika muncul JSON dengan browser info, CDP aktif
+- Jika error "This site can't be reached", Chrome belum mengekspos CDP di port tersebut
+
+**Jika CDP aktif tapi Automation Studio tidak bisa connect:**
+- Windows Firewall mungkin memblokir Python → tambahkan pengecualian untuk `python.exe`
+- Jalankan Automation Studio sebagai Administrator jika Chrome berjalan sebagai Administrator
 
 #### Workflow gagal dengan HTTP 419 (CSRF mismatch)
 
