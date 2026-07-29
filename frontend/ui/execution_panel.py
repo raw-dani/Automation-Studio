@@ -5,6 +5,7 @@ Dilengkapi: step list, resume, headless toggle, slow_mo slider, browser selector
 
 import asyncio
 import json
+import socket
 import urllib.request
 import urllib.error
 from typing import Optional
@@ -686,7 +687,6 @@ class ExecutionPanel(QWidget):
 
         for port in common_ports:
             # First check if port is open at socket level
-            import socket
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(1)
             try:
