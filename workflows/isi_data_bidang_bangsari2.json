@@ -31,11 +31,12 @@
       "type": "wait",
       "label": "Tunggu proses login selesai",
       "params": {
-        "wait_type": "fixed",
-        "duration": 3000,
+        "duration": 300000,
+        "selector": "",
         "timeout": 10000,
         "wait_after": 0,
-        "wait_before": 0
+        "wait_before": 0,
+        "wait_type": "fixed"
       },
       "on_error": "stop",
       "retry": {
@@ -60,9 +61,9 @@
     {
       "id": "step_4",
       "type": "click",
-      "label": "Klik tab Lengkapi Bidang",
+      "label": "Klik dropdown Pilih Desa / Kelurahan",
       "params": {
-        "selector": "#profile-tab",
+        "selector": "#select2-desa-container",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
@@ -429,5 +430,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T21:04:26.624510",
-  "updated_at": "2026-07-28T21:30:00.000000"
+  "updated_at": "2026-07-29T19:58:48.274482"
 }
