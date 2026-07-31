@@ -44,7 +44,7 @@ class Select2Action(BaseAction):
                 status=ActionStatus.FAILED,
                 message="Tidak ada halaman browser yang aktif.",
             )
-        
+
         selector = params.get("selector", "")
         search_selector = params.get("search_selector", "")
         value = params.get("value", "")
@@ -54,117 +54,81 @@ class Select2Action(BaseAction):
         clear_first = params.get("clear_first", True)
         skip_if_empty = params.get("skip_if_empty", False)
         add_new = params.get("add_new", False)
-        
-        # Variable substitution
+
         selector = self._substitute_variables(selector, context)
         search_selector = self._substitute_variables(search_selector, context)
         value = self._substitute_variables(value, context)
-        
-        # Skip jika value kosong
+
         if skip_if_empty and not value:
             return ActionResult(
                 status=ActionStatus.SKIPPED,
                 message=f"Value kosong, melewati Select2 '{selector}'",
             )
-        
+
         import asyncio
-        
+
         if wait_before > 0:
             await asyncio.sleep(wait_before / 1000)
-        
+
         try:
-            # Build visible Select2 click target.
-            # The native <select> is hidden by Select2; the visible trigger is
-            # usually the adjacent `.select2-container .select2-selection--single`.
             adjacent_trigger = f"{selector} + .select2-container .select2-selection--single, {selector} + .select2-container"
             container_id = selector.replace("#", "select2-") + "-container"
             container_trigger = f"#{container_id} .select2-selection--single, #{container_id}"
-            
-            # Prefer adjacent container, fallback to generated container id
+
             click_target = f"{adjacent_trigger}, {container_trigger}, {selector}"
-            
-            # Pastikan target terlihat
+
             await page.wait_for_selector(click_target, state="visible", timeout=timeout)
-            
-            # Klik trigger visible. Use locator().last to avoid the hidden <select> when multiple elements match.
+
             await page.locator(click_target).last.click(timeout=timeout)
-            await asyncio.sleep(0.3)
-            
-            # Wait for dropdown results to appear
+            await asyncio.sleep(0.5)
+
             results_selector = ".select2-container--open .select2-results"
             await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
-            await asyncio.sleep(0.2)
-            
-            target_input = search_selector or ".select2-container--open .select2-search__field"
-            
-            # Try direct option click first (works for small lists without search field)
-            option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-            option_count = await page.locator(option_selector).count()
-            
-            if option_count > 0:
-                await page.locator(option_selector).first.click(timeout=timeout)
-            else:
-                # Fallback to search field if direct option not found
-                search_input_selector = ".select2-container--open .select2-search__field"
-                target_input = search_selector or search_input_selector
-                
-                # Check if search field exists and is visible
-                search_count = await page.locator(target_input).count()
-                if search_count > 0:
-                    is_visible = await page.locator(target_input).first.is_visible()
-                    
-                    if is_visible:
-                        # Clear and type value
-                        if clear_first:
-                            await page.fill(target_input, "")
-                            await asyncio.sleep(0.2)
-                        
-                        await page.type(target_input, value, delay=50)
-                        await asyncio.sleep(0.5)
-                        
-                        # Now click the option that should appear
-                        option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-                        option_count = await page.locator(option_selector).count()
-                        
-                        if option_count > 0:
-                            await page.locator(option_selector).first.click(timeout=timeout)
-                        elif add_new:
-                            # Try add new modal
-                            add_result = await self._try_add_new(page, selector, value, timeout)
-                            if not add_result:
-                                return ActionResult(
-                                    status=ActionStatus.FAILED,
-                                    message=f"Opsi '{value}' tidak ditemukan setelah search.",
-                                    error=f"Option not found: {value}",
-                                )
-                        else:
-                            return ActionResult(
-                                status=ActionStatus.FAILED,
-                                message=f"Opsi '{value}' tidak ditemukan dalam dropdown.",
-                                error=f"Option not found: {value}",
-                            )
-                    elif add_new:
-                        # Search field hidden but add_new enabled
-                        add_result = await self._try_add_new(page, selector, value, timeout)
-                        if not add_result:
-                            return ActionResult(
-                                status=ActionStatus.FAILED,
-                                message=f"Opsi '{value}' tidak ditemukan dan search field tersembunyi.",
-                                error=f"Option not found: {value}",
-                            )
-                    else:
-                        return ActionResult(
-                            status=ActionStatus.FAILED,
-                            message=f"Opsi '{value}' tidak ditemukan dan search field tidak terlihat.",
-                            error=f"Option not found: {value}",
-                        )
+            await asyncio.sleep(0.3)
+
+            search_input_selector = search_selector or ".select2-container--open .select2-search__field"
+            target_input = search_selector or search_input_selector
+
+            search_count = await page.locator(target_input).count()
+            if search_count > 0 and await page.locator(target_input).first.is_visible():
+                if clear_first:
+                    await page.fill(target_input, "")
+                    await asyncio.sleep(0.2)
+
+                await page.type(target_input, value, delay=80)
+                await asyncio.sleep(0.6)
+
+                option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
+                option_count = await page.locator(option_selector).count()
+
+                if option_count > 0:
+                    await page.locator(option_selector).first.click(timeout=timeout)
                 elif add_new:
-                    # No search field at all, try add new directly
                     add_result = await self._try_add_new(page, selector, value, timeout)
                     if not add_result:
                         return ActionResult(
                             status=ActionStatus.FAILED,
-                            message=f"Opsi '{value}' tidak ditemukan.",
+                            message=f"Opsi '{value}' tidak ditemukan setelah search.",
+                            error=f"Option not found: {value}",
+                        )
+                else:
+                    return ActionResult(
+                        status=ActionStatus.FAILED,
+                        message=f"Opsi '{value}' tidak ditemukan dalam dropdown setelah search.",
+                        error=f"Option not found: {value}",
+                    )
+            else:
+                option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
+                option_count = await page.locator(option_selector).count()
+
+                if option_count > 0:
+                    await page.locator(option_selector).first.click(timeout=timeout)
+                elif add_new:
+                    add_result = await self._try_add_new(page, selector, value, timeout)
+                    if not add_result:
+                        return ActionResult(
+                            status=ActionStatus.FAILED,
+                            message=f"Opsi '{value}' tidak ditemukan dalam dropdown.",
                             error=f"Option not found: {value}",
                         )
                 else:
@@ -173,16 +137,16 @@ class Select2Action(BaseAction):
                         message=f"Opsi '{value}' tidak ditemukan dan tidak ada search field.",
                         error=f"Option not found: {value}",
                     )
-            
+
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)
-            
+
             return ActionResult(
                 status=ActionStatus.SUCCESS,
                 message=f"Berhasil pilih Select2 '{selector}' dengan nilai: {value}",
                 data={"selector": selector, "search_selector": target_input, "value": value},
             )
-            
+
         except Exception as e:
             return ActionResult(
                 status=ActionStatus.FAILED,
