@@ -98,10 +98,9 @@ class Select2Action(BaseAction):
                 await page.type(target_input, value, delay=80)
                 await asyncio.sleep(0.6)
 
-                option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-                option_count = await page.locator(option_selector).count()
+                option_selector = await self._find_option(page, value, timeout=timeout)
 
-                if option_count > 0:
+                if option_selector:
                     await page.locator(option_selector).first.click(timeout=timeout)
                 elif add_new:
                     add_result = await self._try_add_new(page, selector, value, timeout)
@@ -118,10 +117,9 @@ class Select2Action(BaseAction):
                         error=f"Option not found: {value}",
                     )
             else:
-                option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-                option_count = await page.locator(option_selector).count()
+                option_selector = await self._find_option(page, value, timeout=timeout)
 
-                if option_count > 0:
+                if option_selector:
                     await page.locator(option_selector).first.click(timeout=timeout)
                 elif add_new:
                     add_result = await self._try_add_new(page, selector, value, timeout)
@@ -153,6 +151,18 @@ class Select2Action(BaseAction):
                 message=f"Gagal pilih Select2 '{selector}' dengan nilai '{value}': {str(e)}",
                 error=str(e),
             )
+
+    async def _find_option(self, page, value: str, timeout: int = 5000):
+        """Cari opsi Select2: exact match dulu, lalu fallback partial match (contains)."""
+        exact_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
+        if await page.locator(exact_selector).count() > 0:
+            return exact_selector
+
+        partial_xpath = f"//li[contains(@class,'select2-results__option') and contains(., '{value}')]"
+        if await page.locator(f"xpath={partial_xpath}").count() > 0:
+            return f"xpath={partial_xpath}"
+
+        return None
     
     async def _fill_add_modal(self, page, value: str, timeout: int = 30000) -> bool:
         """
