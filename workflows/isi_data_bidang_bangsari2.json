@@ -105,7 +105,7 @@
         "selector_type": "css",
         "timeout": 5000,
         "wait_after": 100,
-        "wait_before": 50,
+        "wait_before": 500,
         "wait_for_load_state": "none"
       },
       "on_error": "stop",
@@ -166,11 +166,13 @@
     },
     {
       "id": "step_10",
-      "type": "wait",
-      "label": "Tunggu form input terisi",
+      "type": "input_text",
+      "label": "Input NIB untuk cari bidang",
       "params": {
-        "wait_type": "fixed",
-        "duration": 1000,
+        "selector": "#carinib",
+        "value": "{{data.NIB}}",
+        "clear_first": true,
+        "selector_type": "css",
         "timeout": 10000
       },
       "on_error": "stop",
@@ -181,6 +183,74 @@
     },
     {
       "id": "step_11",
+      "type": "click",
+      "label": "Klik tombol Cari NIB",
+      "params": {
+        "selector": "#datatable_filter input[type=search], #datatable_wrapper .input-group button",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_12",
+      "type": "wait",
+      "label": "Tunggu hasil tabel NIB muncul",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#datatable tbody tr",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_13",
+      "type": "click",
+      "label": "Klik row NIB sesuai data",
+      "params": {
+        "selector": "//table[@id='datatable']//tbody//tr[td[2][contains(., '{{data.NIB}}')]]",
+        "selector_type": "xpath",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_14",
+      "type": "wait",
+      "label": "Tunggu form Lengkapi Bidang terisi",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_15",
       "type": "input_text",
       "label": "Input Keadaan Tanah",
       "params": {
@@ -197,7 +267,7 @@
       }
     },
     {
-      "id": "step_12",
+      "id": "step_16",
       "type": "input_text",
       "label": "Input Tanda Batas",
       "params": {
@@ -214,7 +284,7 @@
       }
     },
     {
-      "id": "step_13",
+      "id": "step_17",
       "type": "input_text",
       "label": "Input Penunjuk Batas",
       "params": {
@@ -231,7 +301,7 @@
       }
     },
     {
-      "id": "step_14",
+      "id": "step_18",
       "type": "input_text",
       "label": "Input Hal lain-lain",
       "params": {
@@ -248,7 +318,7 @@
       }
     },
     {
-      "id": "step_15",
+      "id": "step_19",
       "type": "input_text",
       "label": "Input Nama Jalan",
       "params": {
@@ -265,7 +335,7 @@
       }
     },
     {
-      "id": "step_16",
+      "id": "step_20",
       "type": "input_text",
       "label": "Input Nomor Jalan",
       "params": {
@@ -282,7 +352,7 @@
       }
     },
     {
-      "id": "step_17",
+      "id": "step_21",
       "type": "input_text",
       "label": "Input Alamat Tambahan",
       "params": {
@@ -299,7 +369,7 @@
       }
     },
     {
-      "id": "step_18",
+      "id": "step_22",
       "type": "input_text",
       "label": "Input Kode Pos",
       "params": {
@@ -316,7 +386,7 @@
       }
     },
     {
-      "id": "step_19",
+      "id": "step_23",
       "type": "select_dropdown",
       "label": "Pilih Penggunaan Umum",
       "params": {
@@ -333,7 +403,7 @@
       }
     },
     {
-      "id": "step_20",
+      "id": "step_24",
       "type": "wait",
       "label": "Tunggu Pemanfaatan termuat",
       "params": {
@@ -348,7 +418,7 @@
       }
     },
     {
-      "id": "step_21",
+      "id": "step_25",
       "type": "select_dropdown",
       "label": "Pilih Pemanfaatan Khusus",
       "params": {
@@ -365,7 +435,7 @@
       }
     },
     {
-      "id": "step_22",
+      "id": "step_26",
       "type": "select_dropdown",
       "label": "Pilih Metode Ukur",
       "params": {
@@ -382,7 +452,7 @@
       }
     },
     {
-      "id": "step_23",
+      "id": "step_27",
       "type": "input_text",
       "label": "Input Akurasi Bidang",
       "params": {
@@ -399,7 +469,7 @@
       }
     },
     {
-      "id": "step_24",
+      "id": "step_28",
       "type": "click",
       "label": "Klik tombol Simpan",
       "params": {
@@ -416,7 +486,7 @@
       }
     },
     {
-      "id": "step_25",
+      "id": "step_29",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {
@@ -437,5 +507,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T21:04:26.624510",
-  "updated_at": "2026-08-01T15:06:23.152439"
+  "updated_at": "2026-08-01T15:23:02.767099"
 }
