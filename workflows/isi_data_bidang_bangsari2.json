@@ -135,7 +135,7 @@
       "type": "click",
       "label": "Klik row Peta Bidang pertama",
       "params": {
-        "selector": "#pbtplaceholder tbody tr:first-child",
+        "selector": "#pbtplaceholder tr",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
