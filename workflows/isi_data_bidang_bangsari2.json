@@ -499,6 +499,21 @@
         "max_retries": 3,
         "delay": 2000
       }
+    },
+    {
+      "id": "step_30",
+      "type": "navigate",
+      "label": "Buka ulang halaman Melengkapi Bidang",
+      "params": {
+        "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
+        "wait_until": "domcontentloaded",
+        "timeout": 30000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
     }
   ],
   "monitoring": {
