@@ -274,18 +274,18 @@
         "delay": 2000
       }
     },
-    {
-      "id": "step_11",
-      "type": "click",
-      "label": "Klik tombol Tambah (Simpan Pemilik)",
-      "params": {
-        "selector": "#inputpemohonplaceholder #btn-tambah",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
-        "wait_after": 500
-      },
+        {
+          "id": "step_11",
+          "type": "click",
+          "label": "Klik tombol Tambah (Simpan Pemilik)",
+          "params": {
+            "selector": "#btn-tambah",
+            "selector_type": "css",
+            "force": true,
+            "timeout": 5000,
+            "wait_for_load_state": "none",
+            "wait_after": 500
+          },
       "on_error": "stop",
       "retry": {
         "max_retries": 3,
