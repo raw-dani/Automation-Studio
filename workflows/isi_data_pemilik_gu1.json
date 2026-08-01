@@ -1,11 +1,11 @@
 {
   "id": "workflow_isi_data_pemilik_gu1",
-  "name": "Isi Data Pemilik - LAYOUT GU 1 (Optimized)",
+  "name": "Isi Data Pemilik - LAYOUT GU 51",
   "version": "3.0",
   "url": "https://skb.atrbpn.go.id/BerkasSaya#",
   "data_source": {
     "config": {
-      "file_path": "data/LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
+      "file_path": "data/51. LAYOUT MELENGKAPI BERKAS GU 51.xlsx",
       "sheet": "Sheet1"
     },
     "type": "excel"
@@ -28,6 +28,21 @@
     },
     {
       "id": "step_2",
+      "type": "wait",
+      "label": "Tunggu proses login selesai",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 3000,
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_3",
       "type": "loop",
       "label": "Loop setiap baris pemilik",
       "params": {
@@ -41,7 +56,7 @@
       }
     },
     {
-      "id": "step_3",
+      "id": "step_4",
       "type": "click",
       "label": "Klik tab Entri Berkas",
       "params": {
@@ -58,7 +73,7 @@
       }
     },
     {
-      "id": "step_4",
+      "id": "step_5",
       "type": "wait",
       "label": "Tunggu form Entri Berkas siap",
       "params": {
@@ -73,9 +88,58 @@
       }
     },
     {
-      "id": "step_5",
+      "id": "step_6",
+      "type": "click",
+      "label": "Buka dropdown tipe pemilik",
+      "params": {
+        "selector": "#lblTipe",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_7",
+      "type": "click",
+      "label": "Pilih Perorangan tanpa cek NIK",
+      "params": {
+        "selector": "//a[contains(@onclick, \"ShowInputPemohon(5)\")]",
+        "selector_type": "xpath",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_8",
+      "type": "wait",
+      "label": "Tunggu form pemilik NonDukcapil",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#frmPemohonNonDukcapil",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_9",
       "type": "parallel_group",
-      "label": "Isi semua field form pemilik secara bersamaan",
+      "label": "Isi semua field form pemilik",
       "params": {
         "timeout": 30000,
         "on_error": "skip"
@@ -87,7 +151,7 @@
       },
       "steps": [
         {
-          "id": "step_5a",
+          "id": "step_9a",
           "type": "input_text",
           "label": "Input NIK",
           "params": {
@@ -105,7 +169,7 @@
           }
         },
         {
-          "id": "step_5b",
+          "id": "step_9b",
           "type": "input_text",
           "label": "Input Nama Pemilik",
           "params": {
@@ -123,7 +187,7 @@
           }
         },
         {
-          "id": "step_5c",
+          "id": "step_9c",
           "type": "input_text",
           "label": "Input Alamat",
           "params": {
@@ -141,7 +205,25 @@
           }
         },
         {
-          "id": "step_5d",
+          "id": "step_9d",
+          "type": "input_text",
+          "label": "Input Lokasi",
+          "params": {
+            "selector": "#tLOKASI",
+            "value": "{{data.TEMPAT LAHIR}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_9e",
           "type": "input_text",
           "label": "Input Tempat Lahir",
           "params": {
@@ -159,7 +241,7 @@
           }
         },
         {
-          "id": "step_5e",
+          "id": "step_9f",
           "type": "input_text",
           "label": "Input Status Kawin",
           "params": {
@@ -179,7 +261,7 @@
       ]
     },
     {
-      "id": "step_6",
+      "id": "step_10",
       "type": "wait",
       "label": "Wait sebelum submit",
       "params": {
@@ -193,16 +275,15 @@
       }
     },
     {
-      "id": "step_7",
+      "id": "step_11",
       "type": "click",
       "label": "Klik tombol Tambah (Simpan Pemilik)",
       "params": {
-        "selector": "#btn-tambah",
+        "selector": "#inputpemohonplaceholder #btn-tambah",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
-        "wait_before": 0,
         "wait_after": 500
       },
       "on_error": "stop",
@@ -212,13 +293,28 @@
       }
     },
     {
-      "id": "step_8",
+      "id": "step_12",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {
         "wait_type": "until_hidden",
         "selector": ".loading, .spinner",
         "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_13",
+      "type": "navigate",
+      "label": "Buka ulang halaman Berkas Saya",
+      "params": {
+        "url": "https://skb.atrbpn.go.id/BerkasSaya#",
+        "wait_until": "domcontentloaded",
+        "timeout": 30000
       },
       "on_error": "stop",
       "retry": {
@@ -233,5 +329,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-07-28T22:33:00.000000"
+  "updated_at": "2026-08-01T16:48:00.000000"
 }
