@@ -75,11 +75,11 @@ class Select2Action(BaseAction):
             container_id = selector.replace("#", "select2-") + "-container"
             container_trigger = f"#{container_id} .select2-selection--single, #{container_id}"
 
-            click_target = f"{adjacent_trigger}, {container_trigger}, {selector}"
+            click_target = f"{adjacent_trigger}, {container_trigger}"
 
             await page.wait_for_selector(click_target, state="visible", timeout=timeout)
 
-            await page.locator(click_target).last.click(timeout=timeout)
+            await page.locator(click_target).first.click(timeout=timeout)
             await asyncio.sleep(0.5)
 
             results_selector = ".select2-dropdown, .select2-container--open .select2-results, .select2-dropdown--below .select2-results, .select2-dropdown--above .select2-results"
