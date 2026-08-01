@@ -82,11 +82,11 @@ class Select2Action(BaseAction):
             await page.locator(click_target).last.click(timeout=timeout)
             await asyncio.sleep(0.5)
 
-            results_selector = ".select2-container--open .select2-results"
+            results_selector = ".select2-dropdown, .select2-container--open .select2-results, .select2-dropdown--below .select2-results, .select2-dropdown--above .select2-results"
             await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
             await asyncio.sleep(0.3)
 
-            search_input_selector = search_selector or ".select2-container--open .select2-search__field"
+            search_input_selector = search_selector or ".select2-container--open .select2-search__field, .select2-dropdown .select2-search__field"
             target_input = search_selector or search_input_selector
 
             search_count = await page.locator(target_input).count()
@@ -154,11 +154,15 @@ class Select2Action(BaseAction):
 
     async def _find_option(self, page, value: str, timeout: int = 5000):
         """Cari opsi Select2: exact match dulu, lalu fallback partial match (contains)."""
-        exact_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-        if await page.locator(exact_selector).count() > 0:
-            return exact_selector
+        exact_selectors = [
+            ".select2-container--open .select2-results__option:has-text('%s')" % value,
+            ".select2-dropdown .select2-results__option:has-text('%s')" % value,
+        ]
+        for sel in exact_selectors:
+            if await page.locator(sel).count() > 0:
+                return sel
 
-        partial_xpath = f"//li[contains(@class,'select2-results__option') and contains(., '{value}')]"
+        partial_xpath = "//li[contains(@class,'select2-results__option') and contains(., '%s')]" % value
         if await page.locator(f"xpath={partial_xpath}").count() > 0:
             return f"xpath={partial_xpath}"
 
@@ -226,13 +230,15 @@ class Select2Action(BaseAction):
             await page.keyboard.press("Enter")
             await asyncio.sleep(1)
             
-            # Tunggu opsi baru muncul dan pilih
-            option_selector = f".select2-container--open .select2-results__option:has-text('{value}')"
-            option_count = await page.locator(option_selector).count()
-            
-            if option_count > 0:
-                await page.locator(option_selector).first.click(timeout=timeout)
-                return True
+            option_selectors = [
+                ".select2-container--open .select2-results__option:has-text('%s')" % value,
+                ".select2-dropdown .select2-results__option:has-text('%s')" % value,
+            ]
+            for opt_sel in option_selectors:
+                option_count = await page.locator(opt_sel).count()
+                if option_count > 0:
+                    await page.locator(opt_sel).first.click(timeout=timeout)
+                    return True
             
             return False
             
