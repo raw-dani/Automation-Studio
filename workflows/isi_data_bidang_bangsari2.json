@@ -5,7 +5,7 @@
   "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
   "data_source": {
     "config": {
-      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BERKAS GU 1.xlsx",
+      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BIDANG DESA GUMIRIH BLOK 1.xlsx",
       "sheet": "Sheet1"
     },
     "type": "excel"
@@ -63,10 +63,12 @@
       "type": "select2",
       "label": "Pilih Desa BANGUNSARI via Select2",
       "params": {
-        "selector": "#desa",
-        "value": "{{data.ALAMAT}}",
         "clear_first": true,
-        "timeout": 10000
+        "selector": "#desa",
+        "timeout": 10000,
+        "value": "GUMIRIH",
+        "wait_after": 100,
+        "wait_before": 50
       },
       "on_error": "stop",
       "retry": {
@@ -79,11 +81,13 @@
       "type": "input_text",
       "label": "Input Nomor PBT",
       "params": {
-        "selector": "#nomorpbt",
-        "value": "{{data.PBT}}",
         "clear_first": true,
+        "selector": "#nomorpbt",
         "selector_type": "css",
-        "timeout": 10000
+        "timeout": 10000,
+        "value": "{{data.PBT}}",
+        "wait_after": 100,
+        "wait_before": 50
       },
       "on_error": "stop",
       "retry": {
@@ -96,10 +100,12 @@
       "type": "click",
       "label": "Klik tombol Cari",
       "params": {
+        "force": true,
         "selector": "#find-btn",
         "selector_type": "css",
-        "force": true,
         "timeout": 5000,
+        "wait_after": 100,
+        "wait_before": 50,
         "wait_for_load_state": "none"
       },
       "on_error": "stop",
@@ -127,9 +133,9 @@
     {
       "id": "step_8",
       "type": "click",
-      "label": "Klik row Peta Bidang sesuai data",
+      "label": "Klik row Peta Bidang sesuai nomor urut",
       "params": {
-        "selector": "//table[@id='pbtplaceholder']//tr[contains(., '{{data.PBT}}')]",
+        "selector": "//tbody[@id=\"pbtplaceholder\"]//tr[{{data.nomor}}]",
         "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
@@ -431,5 +437,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T21:04:26.624510",
-  "updated_at": "2026-07-29T21:41:07.260060"
+  "updated_at": "2026-08-01T15:06:23.152439"
 }
