@@ -117,10 +117,10 @@
     {
       "id": "step_7",
       "type": "wait",
-      "label": "Tunggu container Peta Bidang",
+      "label": "Tunggu hasil Peta Bidang muncul",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#pbtplaceholder",
+        "selector": "#pbtplaceholder tbody tr",
         "timeout": 10000,
         "wait_for_load_state": "none"
       },
@@ -133,10 +133,10 @@
     {
       "id": "step_8",
       "type": "click",
-      "label": "Klik row Peta Bidang sesuai nomor urut",
+      "label": "Klik row Peta Bidang pertama",
       "params": {
-        "selector": "//tbody[@id=\"pbtplaceholder\"]//tr[{{data.nomor}}]",
-        "selector_type": "xpath",
+        "selector": "#pbtplaceholder tbody tr:first-child",
+        "selector_type": "css",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
