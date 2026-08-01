@@ -117,10 +117,10 @@
     {
       "id": "step_7",
       "type": "wait",
-      "label": "Tunggu hasil Peta Bidang muncul",
+      "label": "Tunggu container Peta Bidang",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#pbtplaceholder tbody tr",
+        "selector": "#pbtplaceholder",
         "timeout": 10000,
         "wait_for_load_state": "none"
       },
@@ -133,10 +133,10 @@
     {
       "id": "step_8",
       "type": "click",
-      "label": "Klik row Peta Bidang pertama",
+      "label": "Klik row Peta Bidang sesuai nomor urut",
       "params": {
-        "selector": "#pbtplaceholder tbody tr:first-child",
-        "selector_type": "css",
+        "selector": "//tbody[@id=\"pbtplaceholder\"]//tr[{{data.nomor}}]",
+        "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
@@ -186,7 +186,7 @@
       "type": "click",
       "label": "Klik tombol Cari NIB",
       "params": {
-        "selector": "#datatable_filter input[type=search], #datatable_wrapper .input-group button",
+        "selector": "#frmCariBidang button[type=submit]",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
@@ -220,7 +220,7 @@
       "type": "click",
       "label": "Klik row NIB sesuai data",
       "params": {
-        "selector": "//table[@id='datatable']//tbody//tr[td[2][contains(., '{{data.NIB}}')]]",
+        "selector": "//table[@id='datatable']//tr[td[2][contains(., '{{data.NIB}}')]]",
         "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
