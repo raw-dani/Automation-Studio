@@ -161,16 +161,16 @@ class InputTextAction(BaseAction):
         
         Args:
             value: Nilai tanggal dari Excel, contoh "05|02|1976"
-            date_format: Format string "input_format|output_format"
-                         Contoh: "dd|MM|yyyy|dd/MM/yyyy"
+            date_format: Format string "input_format->output_format"
+                         Contoh: "dd|MM|yyyy->dd/MM/yyyy"
         
         Returns:
             Tanggal dalam format web, contoh "05/02/1976"
         """
-        if not date_format or "|" not in date_format:
+        if not date_format or "->" not in date_format:
             return value
         
-        parts = date_format.split("|")
+        parts = date_format.split("->", 1)
         if len(parts) != 2:
             return value
         
@@ -202,7 +202,7 @@ class InputTextAction(BaseAction):
                 i += 2
             elif i + 1 < len(output_fmt) and output_fmt[i] == 'd' and output_fmt[i+1] == 'd':
                 output_tokens.append('dd')
-                i += 1
+                i += 2
             elif i + 3 < len(output_fmt) and output_fmt[i:i+4] == 'yyyy':
                 output_tokens.append('yyyy')
                 i += 4
