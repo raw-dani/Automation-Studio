@@ -187,7 +187,7 @@
       "label": "Buka dropdown tipe pemilik",
       "params": {
         "force": true,
-        "selector": ".dropdown-toggle[data-toggle='dropdown']",
+        "selector": "#tab2 .dropdown-toggle[data-toggle='dropdown']",
         "selector_type": "css",
         "timeout": 5000,
         "wait_after": 500,
@@ -205,8 +205,8 @@
       "label": "Pilih Perorangan tanpa cek NIK",
       "params": {
         "force": true,
-        "selector": "//a[contains(@onclick, \"ShowInputPemohon(5)\")]",
-        "selector_type": "xpath",
+        "selector": "#tab2 .dropdown-menu a[onclick*='ShowInputPemohon(5)']",
+        "selector_type": "css",
         "timeout": 5000,
         "wait_for_load_state": "none"
       },
