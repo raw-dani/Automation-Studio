@@ -170,7 +170,7 @@
       "type": "wait",
       "label": "Tunggu form entri pemilik terisi",
       "params": {
-        "duration": 1000,
+        "duration": 100000,
         "timeout": 10000,
         "wait_for_load_state": "none",
         "wait_type": "fixed"
@@ -232,7 +232,7 @@
       },
       "steps": [
         {
-          "id": "step_9a",
+          "id": "step_13a",
           "type": "input_text",
           "label": "Input NIK",
           "params": {
@@ -250,9 +250,9 @@
           }
         },
         {
-          "id": "step_9b",
+          "id": "step_13b",
           "type": "input_text",
-          "label": "Input Nama Lengkap",
+          "label": "Input Nama",
           "params": {
             "selector": "#tNAMA_LENGKAP",
             "value": "{{data.NAMA}}",
@@ -268,7 +268,79 @@
           }
         },
         {
-          "id": "step_9c",
+          "id": "step_13c",
+          "type": "input_text",
+          "label": "Input Alamat",
+          "params": {
+            "selector": "#tALAMAT",
+            "value": "{{data.ALAMAT}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13d",
+          "type": "input_text",
+          "label": "Input Lokasi",
+          "params": {
+            "selector": "#tLOKASI",
+            "value": "{{data.TEMPAT LAHIR}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13e",
+          "type": "input_text",
+          "label": "Input Kode Pos",
+          "params": {
+            "selector": "#tKODE_POS",
+            "value": "",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13f",
+          "type": "input_text",
+          "label": "Input RT/RW",
+          "params": {
+            "selector": "#tDUSUN",
+            "value": "",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13g",
           "type": "input_text",
           "label": "Input Tempat Lahir",
           "params": {
@@ -286,17 +358,102 @@
           }
         },
         {
-          "id": "step_9d",
+          "id": "step_13h",
           "type": "input_date",
           "label": "Input Tanggal Lahir",
           "params": {
-            "clear_first": true,
-            "date_format": "dd|MM|yyyy->dd/MM/yyyy",
             "selector": "#tTANGGAL_LAHIR",
-            "use_fill": true,
             "value": "{{data.TANGGAL LAHIR}}",
-            "wait_after": 100,
-            "wait_before": 0
+            "date_format": "dd|MM|yyyy->dd/MM/yyyy",
+            "clear_first": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13i",
+          "type": "radio_select",
+          "label": "Pilih Jenis Kelamin",
+          "params": {
+            "selector": "#JENIS_KELAMIN",
+            "value": "Laki-laki",
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13j",
+          "type": "input_text",
+          "label": "Input Golongan Darah",
+          "params": {
+            "selector": "#tGOLONGAN_DARAH",
+            "value": "",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13k",
+          "type": "input_text",
+          "label": "Input Status",
+          "params": {
+            "selector": "#tSTATUS_KAWIN",
+            "value": "{{data.STATUS}}",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13l",
+          "type": "input_text",
+          "label": "Input Agama",
+          "params": {
+            "selector": "#tAGAMA",
+            "value": "",
+            "clear_first": true,
+            "use_fill": true,
+            "wait_before": 0,
+            "wait_after": 0
+          },
+          "on_error": "stop",
+          "retry": {
+            "max_retries": 3,
+            "delay": 2000
+          }
+        },
+        {
+          "id": "step_13m",
+          "type": "select2",
+          "label": "Pilih Pekerjaan",
+          "params": {
+            "selector": "#tJENIS_PEKERJAAN",
+            "value": "Tidak Bekerja",
+            "wait_before": 0,
+            "wait_after": 0
           },
           "on_error": "stop",
           "retry": {
@@ -393,5 +550,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T21:47:16.777031"
+  "updated_at": "2026-08-02T22:08:10.070445"
 }
