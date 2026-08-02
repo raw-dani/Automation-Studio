@@ -23,6 +23,7 @@ class ClickAction(BaseAction):
             "force": False,          # force click even if not visible
             "timeout": 30000,        # ms
             "wait_for_load_state": "none",  # none, domcontentloaded, load, networkidle
+            "use_evaluate": False,           # Jika True, gunakan page.evaluate() untuk klik bypass selector engine
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -48,6 +49,7 @@ class ClickAction(BaseAction):
         force = params.get("force", False)
         timeout = params.get("timeout", 10000)
         wait_for_load_state = params.get("wait_for_load_state", "none")
+        use_evaluate = params.get("use_evaluate", False)
         
         # Performance config
         perf = context.config.get("performance", {})
@@ -68,6 +70,9 @@ class ClickAction(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
+            if use_evaluate:
+                return await self._evaluate_click(page, selector, selector_type, force, timeout, wait_for_load_state)
+            
             # Tunggu elemen muncul
             await page.wait_for_selector(play_selector, timeout=timeout)
             
@@ -178,7 +183,74 @@ class ClickAction(BaseAction):
                 await page.wait_for_load_state(wait_for_load_state, timeout=timeout)
             except Exception:
                 pass
-
+    
+    async def _evaluate_click(self, page, selector: str, selector_type: str, force: bool, timeout: int, wait_for_load_state: str):
+        """Klik elemen menggunakan page.evaluate() untuk bypass selector engine Playwright."""
+        try:
+            if selector_type == "xpath":
+                js_code = """(args) => {
+                    const [xpath, force] = args;
+                    const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                    const el = result.singleNodeValue;
+                    if (el) {
+                        if (force) {
+                            el.style.display = 'block';
+                            el.style.visibility = 'visible';
+                            el.style.opacity = '1';
+                        }
+                        el.click();
+                        return true;
+                    }
+                    return false;
+                }"""
+                clicked = await page.evaluate(js_code, [selector, force])
+                if not clicked:
+                    return ActionResult(
+                        status=ActionStatus.FAILED,
+                        message=f"Elemen tidak ditemukan dengan XPath: {selector}",
+                        error="Element not found via evaluate",
+                    )
+            else:
+                js_code = """(args) => {
+                    const [sel, force] = args;
+                    const el = document.querySelector(sel);
+                    if (el) {
+                        if (force) {
+                            el.style.display = 'block';
+                            el.style.visibility = 'visible';
+                            el.style.opacity = '1';
+                        }
+                        el.click();
+                        return true;
+                    }
+                    return false;
+                }"""
+                clicked = await page.evaluate(js_code, [selector, force])
+                if not clicked:
+                    return ActionResult(
+                        status=ActionStatus.FAILED,
+                        message=f"Elemen tidak ditemukan dengan selector: {selector}",
+                        error="Element not found via evaluate",
+                    )
+            
+            if wait_for_load_state != "none":
+                try:
+                    await page.wait_for_load_state(wait_for_load_state, timeout=timeout)
+                except Exception:
+                    pass
+            
+            return ActionResult(
+                status=ActionStatus.SUCCESS,
+                message=f"Berhasil klik elemen via evaluate: {selector}",
+                data={"selector": selector, "selector_type": selector_type, "method": "evaluate"},
+            )
+        except Exception as e:
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message=f"Gagal klik elemen via evaluate '{selector}': {str(e)}",
+                error=str(e),
+            )
+    
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:
         """Substitusi variable {{data.field}} dengan nilai dari context."""
         if "{{" not in text:

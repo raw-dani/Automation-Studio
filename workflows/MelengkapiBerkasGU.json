@@ -151,12 +151,13 @@
       "type": "click",
       "label": "Klik row berkas sesuai data",
       "params": {
-        "selector": "#berkasplaceholder tr:has-text(\"{{data.BERKAS}}/{{data.TAHUN}}\")",
-        "selector_type": "css",
+        "selector": "//tbody[@id='berkasplaceholder']//tr[td[2][contains(., '{{data.BERKAS}}/{{data.TAHUN}}')]]",
+        "selector_type": "xpath",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
-        "wait_after": 500
+        "wait_after": 500,
+        "use_evaluate": true
       },
       "on_error": "stop",
       "retry": {
@@ -169,7 +170,7 @@
       "type": "wait",
       "label": "Tunggu form entri pemilik terisi",
       "params": {
-        "duration": 10000,
+        "duration": 1000,
         "timeout": 10000,
         "wait_for_load_state": "none",
         "wait_type": "fixed"
@@ -355,5 +356,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T19:54:50.100180"
+  "updated_at": "2026-08-02T20:00:13.358708"
 }
