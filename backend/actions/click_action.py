@@ -176,7 +176,9 @@ class ClickAction(BaseAction):
                 raise
         await page.evaluate("""(sel) => {
             const el = document.querySelector(sel);
-            if (el) el.click();
+            if (el) {
+                el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+            }
         }""", play_selector)
         if wait_for_load_state != "none":
             try:
@@ -198,7 +200,7 @@ class ClickAction(BaseAction):
                             el.style.visibility = 'visible';
                             el.style.opacity = '1';
                         }
-                        el.click();
+                        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
                         return true;
                     }
                     return false;
@@ -220,7 +222,7 @@ class ClickAction(BaseAction):
                             el.style.visibility = 'visible';
                             el.style.opacity = '1';
                         }
-                        el.click();
+                        el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
                         return true;
                     }
                     return false;
