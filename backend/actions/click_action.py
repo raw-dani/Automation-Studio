@@ -70,8 +70,41 @@ class ClickAction(BaseAction):
             await asyncio.sleep(wait_before / 1000)
         
         try:
+            # Capture pre-click state for diagnostics
+            pre_click_url = page.url
+            pre_click_title = await page.title()
+            element_info = {}
+            
+            if not use_evaluate:
+                try:
+                    locator = page.locator(play_selector).first
+                    element_info = {
+                        "selector": selector,
+                        "selector_type": selector_type,
+                        "play_selector": play_selector,
+                        "count": await locator.count(),
+                        "visible": await locator.is_visible() if await locator.count() > 0 else None,
+                    }
+                    if await locator.count() > 0:
+                        try:
+                            bbox = await locator.bounding_box()
+                            element_info["bounding_box"] = bbox
+                        except Exception:
+                            element_info["bounding_box"] = None
+                except Exception as e:
+                    element_info["locator_error"] = str(e)
+            
             if use_evaluate:
-                return await self._evaluate_click(page, selector, selector_type, force, timeout, wait_for_load_state)
+                result = await self._evaluate_click(page, selector, selector_type, force, timeout, wait_for_load_state)
+                if result.status == ActionStatus.SUCCESS:
+                    result.data = result.data or {}
+                    result.data.update({
+                        "pre_click_url": pre_click_url,
+                        "pre_click_title": pre_click_title,
+                        "element_info": element_info,
+                        "method": "evaluate",
+                    })
+                return result
             
             # Tunggu elemen muncul
             await page.wait_for_selector(play_selector, timeout=timeout)
@@ -81,14 +114,37 @@ class ClickAction(BaseAction):
             
             await self._safe_click(page, play_selector, force, timeout, wait_for_load_state)
             
+            # Capture post-click state
+            post_click_url = page.url
+            post_click_title = await page.title()
+            
             # Wait after
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)
             
+            # Check for JS errors after click
+            js_errors = []
+            try:
+                js_errors = await page.evaluate("""() => {
+                    return window.__playwright_js_errors || [];
+                }""")
+            except Exception:
+                pass
+            
             return ActionResult(
                 status=ActionStatus.SUCCESS,
                 message=f"Berhasil klik elemen: {selector}",
-                data={"selector": selector, "selector_type": selector_type},
+                data={
+                    "selector": selector,
+                    "selector_type": selector_type,
+                    "pre_click_url": pre_click_url,
+                    "post_click_url": post_click_url,
+                    "url_changed": pre_click_url != post_click_url,
+                    "pre_click_title": pre_click_title,
+                    "post_click_title": post_click_title,
+                    "element_info": element_info,
+                    "js_errors": js_errors,
+                },
             )
             
         except Exception as e:
@@ -96,6 +152,12 @@ class ClickAction(BaseAction):
                 status=ActionStatus.FAILED,
                 message=f"Gagal klik elemen '{selector}': {str(e)}",
                 error=str(e),
+                data={
+                    "selector": selector,
+                    "selector_type": selector_type,
+                    "pre_click_url": pre_click_url,
+                    "element_info": element_info,
+                },
             )
     
     def _convert_selector(self, selector: str, selector_type: str) -> str:
@@ -186,8 +248,9 @@ class ClickAction(BaseAction):
             except Exception:
                 pass
     
-    async def _evaluate_click(self, page, selector: str, selector_type: str, force: bool, timeout: int, wait_for_load_state: str):
+    async def _evaluate_click(self, page, selector: str, selector_type: str, force: bool, timeout: int, wait_for_load_state: str, pre_click_url: str = "", pre_click_title: str = "", element_info: dict = None):
         """Klik elemen menggunakan page.evaluate() untuk bypass selector engine Playwright."""
+        element_info = element_info or {}
         try:
             if selector_type == "xpath":
                 js_code = """(args) => {
@@ -211,6 +274,7 @@ class ClickAction(BaseAction):
                         status=ActionStatus.FAILED,
                         message=f"Elemen tidak ditemukan dengan XPath: {selector}",
                         error="Element not found via evaluate",
+                        data={"pre_click_url": pre_click_url, "element_info": element_info},
                     )
             else:
                 js_code = """(args) => {
@@ -233,6 +297,7 @@ class ClickAction(BaseAction):
                         status=ActionStatus.FAILED,
                         message=f"Elemen tidak ditemukan dengan selector: {selector}",
                         error="Element not found via evaluate",
+                        data={"pre_click_url": pre_click_url, "element_info": element_info},
                     )
             
             if wait_for_load_state != "none":
@@ -241,16 +306,30 @@ class ClickAction(BaseAction):
                 except Exception:
                     pass
             
+            post_click_url = page.url
+            post_click_title = await page.title()
+            
             return ActionResult(
                 status=ActionStatus.SUCCESS,
                 message=f"Berhasil klik elemen via evaluate: {selector}",
-                data={"selector": selector, "selector_type": selector_type, "method": "evaluate"},
+                data={
+                    "selector": selector,
+                    "selector_type": selector_type,
+                    "method": "evaluate",
+                    "pre_click_url": pre_click_url,
+                    "post_click_url": post_click_url,
+                    "url_changed": pre_click_url != post_click_url,
+                    "pre_click_title": pre_click_title,
+                    "post_click_title": post_click_title,
+                    "element_info": element_info,
+                },
             )
         except Exception as e:
             return ActionResult(
                 status=ActionStatus.FAILED,
                 message=f"Gagal klik elemen via evaluate '{selector}': {str(e)}",
                 error=str(e),
+                data={"pre_click_url": pre_click_url, "element_info": element_info},
             )
     
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:

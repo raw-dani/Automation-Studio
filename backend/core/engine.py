@@ -346,6 +346,16 @@ class ExecutionEngine:
                     f"Step {step.id}: {result.status.value} - {result.message}",
                 )
                 
+                # Log detailed diagnostics jika ada
+                if result.data:
+                    if "url_changed" in result.data:
+                        self._log("INFO", f"  URL: {result.data.get('pre_click_url', '')} -> {result.data.get('post_click_url', '')} (changed={result.data.get('url_changed')})")
+                    if "element_info" in result.data and result.data["element_info"]:
+                        info = result.data["element_info"]
+                        self._log("INFO", f"  Element: count={info.get('count')}, visible={info.get('visible')}, bbox={info.get('bounding_box')}")
+                    if result.data.get("js_errors"):
+                        self._log("WARNING", f"  JS Errors after click: {result.data['js_errors']}")
+                
                 if result.status == ActionStatus.SUCCESS:
                     self._update_progress(step_index, total_steps, step.id, "success")
                 else:
