@@ -1,0 +1,543 @@
+{
+  "id": "workflow_isi_data_bidang_bangsari2",
+  "name": "Isi Data Bidang - DESA BANGUNSARI 2",
+  "version": "1.0",
+  "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
+  "data_source": {
+    "config": {
+      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BIDANG DESA GUMIRIH BLOK 1.xlsx",
+      "sheet": "Sheet1"
+    },
+    "type": "excel"
+  },
+  "steps": [
+    {
+      "id": "step_1",
+      "type": "wait",
+      "label": "Wait browser/page siap",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "body",
+        "timeout": 15000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_2",
+      "type": "wait",
+      "label": "Tunggu proses login selesai",
+      "params": {
+        "duration": 300000,
+        "selector": "",
+        "timeout": 10000,
+        "wait_after": 0,
+        "wait_before": 0,
+        "wait_type": "fixed"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_3",
+      "type": "loop",
+      "label": "Loop setiap baris bidang tanah",
+      "params": {
+        "loop_type": "data_source",
+        "data_source": "bidang"
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_4",
+      "type": "select2",
+      "label": "Pilih Desa BANGUNSARI via Select2",
+      "params": {
+        "clear_first": true,
+        "selector": "#desa",
+        "timeout": 10000,
+        "value": "GUMIRIH",
+        "wait_after": 100,
+        "wait_before": 50
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_5",
+      "type": "input_text",
+      "label": "Input Nomor PBT",
+      "params": {
+        "clear_first": true,
+        "selector": "#nomorpbt",
+        "selector_type": "css",
+        "timeout": 10000,
+        "value": "{{data.PBT}}",
+        "wait_after": 100,
+        "wait_before": 50
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_6",
+      "type": "click",
+      "label": "Klik tombol Cari",
+      "params": {
+        "force": true,
+        "selector": "#find-btn",
+        "selector_type": "css",
+        "timeout": 5000,
+        "wait_after": 100,
+        "wait_before": 500,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_7",
+      "type": "wait",
+      "label": "Tunggu container Peta Bidang",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#pbtplaceholder",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_8",
+      "type": "click",
+      "label": "Klik row Peta Bidang pertama",
+      "params": {
+        "selector": "#pbtplaceholder tr",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_9",
+      "type": "wait",
+      "label": "Tunggu form Lengkapi Bidang terisi",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_10",
+      "type": "input_text",
+      "label": "Input NIB untuk cari bidang",
+      "params": {
+        "selector": "#carinib",
+        "value": "{{data.NIB}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_11",
+      "type": "click",
+      "label": "Klik tombol Cari NIB",
+      "params": {
+        "selector": "#frmCariBidang button[type=submit]",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_12",
+      "type": "wait",
+      "label": "Tunggu hasil tabel NIB muncul",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#datatable tbody tr",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_13",
+      "type": "click",
+      "label": "Klik row NIB sesuai data",
+      "params": {
+        "selector": "//table[@id='datatable']//tr[td[2][contains(., '{{data.NIB}}')]]",
+        "selector_type": "xpath",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_14",
+      "type": "wait",
+      "label": "Tunggu form Lengkapi Bidang terisi",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_15",
+      "type": "input_text",
+      "label": "Input Keadaan Tanah",
+      "params": {
+        "selector": "#keadaantanah",
+        "value": "{{data.Keadaan Tanah}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_16",
+      "type": "input_text",
+      "label": "Input Tanda Batas",
+      "params": {
+        "selector": "#tandabatas",
+        "value": "{{data.Tanda Batas}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_17",
+      "type": "input_text",
+      "label": "Input Penunjuk Batas",
+      "params": {
+        "selector": "#penunjukbatas",
+        "value": "{{data.Penunjuk Batas}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_18",
+      "type": "input_text",
+      "label": "Input Hal lain-lain",
+      "params": {
+        "selector": "#hallain",
+        "value": "{{data.Hal lain-lain}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_19",
+      "type": "input_text",
+      "label": "Input Nama Jalan",
+      "params": {
+        "selector": "#namajalan",
+        "value": "{{data.Nama Jalan}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_20",
+      "type": "input_text",
+      "label": "Input Nomor Jalan",
+      "params": {
+        "selector": "#nomorjalan",
+        "value": "{{data.Nomor Jalan}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_21",
+      "type": "input_text",
+      "label": "Input Alamat Tambahan",
+      "params": {
+        "selector": "#alamattambahan",
+        "value": "{{data.Alamat Tambahan}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_22",
+      "type": "input_text",
+      "label": "Input Kode Pos",
+      "params": {
+        "selector": "#kodepos",
+        "value": "{{data.Kode Pos}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_23",
+      "type": "select_dropdown",
+      "label": "Pilih Penggunaan Umum",
+      "params": {
+        "selector": "#penggunaanumum",
+        "select_by": "value",
+        "select_value": "{{data.Penggunaan}}",
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_24",
+      "type": "wait",
+      "label": "Tunggu Pemanfaatan termuat",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_25",
+      "type": "select_dropdown",
+      "label": "Pilih Pemanfaatan Khusus",
+      "params": {
+        "selector": "#penggunaankhusus",
+        "select_by": "value",
+        "select_value": "{{data.Pemanfaatan}}",
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_26",
+      "type": "select_dropdown",
+      "label": "Pilih Metode Ukur",
+      "params": {
+        "selector": "#metodeukur",
+        "select_by": "value",
+        "select_value": "{{data.Metode Ukur}}",
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_27",
+      "type": "select_dropdown",
+      "label": "Pilih Alat Ukur",
+      "params": {
+        "selector": "#alatukur",
+        "select_by": "value",
+        "select_value": "{{data.Alat Ukur}}",
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_28",
+      "type": "input_text",
+      "label": "Input Akurasi Bidang",
+      "params": {
+        "selector": "#AkurasiBidang",
+        "value": "{{data.Akurasi Bidang}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_29",
+      "type": "click",
+      "label": "Klik tombol Simpan",
+      "params": {
+        "selector": "#frmLengkapiBidang button[type=submit]",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_30",
+      "type": "wait",
+      "label": "Wait loading selesai",
+      "params": {
+        "wait_type": "until_hidden",
+        "selector": ".loading, .spinner",
+        "timeout": 5000
+      },
+      "on_error": "skip",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_31",
+      "type": "navigate",
+      "label": "Buka ulang halaman Melengkapi Bidang",
+      "params": {
+        "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
+        "wait_until": "domcontentloaded",
+        "timeout": 30000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    }
+  ],
+  "monitoring": {
+    "screenshot_on_error": true,
+    "screenshot_on_step": false,
+    "log_level": "INFO"
+  },
+  "created_at": "2026-07-28T21:04:26.624510",
+  "updated_at": "2026-08-02T18:27:19.990711"
+}
