@@ -151,8 +151,8 @@
       "type": "click",
       "label": "Klik row berkas sesuai data",
       "params": {
-        "selector": "//tbody[@id='berkasplaceholder']//tr[contains(@onclick, \"{{data.BERKAS}}/{{data.TAHUN}}\")]",
-        "selector_type": "xpath",
+        "selector": "#berkasplaceholder tr:has-text(\"{{data.BERKAS}}/{{data.TAHUN}}\")",
+        "selector_type": "css",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
@@ -169,7 +169,7 @@
       "type": "wait",
       "label": "Tunggu form entri pemilik terisi",
       "params": {
-        "duration": 1000,
+        "duration": 10000,
         "timeout": 10000,
         "wait_for_load_state": "none",
         "wait_type": "fixed"
@@ -355,5 +355,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T19:51:06.675699"
+  "updated_at": "2026-08-02T19:54:50.100180"
 }
