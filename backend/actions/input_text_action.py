@@ -26,6 +26,7 @@ class InputTextAction(BaseAction):
             "timeout": 30000,
             "skip_if_empty": False,  # Skip step jika value kosong
             "use_evaluate": False,   # Jika True, gunakan page.evaluate() untuk bypass pattern validation
+            "date_format": None,     # Jika diisi, convert value dari format Excel ke format web. Contoh: "dd|MM|yyyy|dd/MM/yyyy"
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -51,6 +52,7 @@ class InputTextAction(BaseAction):
         type_delay = params.get("type_delay", 0)
         use_fill = params.get("use_fill", False)
         use_evaluate = params.get("use_evaluate", False)
+        date_format = params.get("date_format", None)
         wait_before = params.get("wait_before", 0)
         wait_after = params.get("wait_after", 0)
         timeout = params.get("timeout", 10000)
@@ -69,6 +71,10 @@ class InputTextAction(BaseAction):
         # Variable substitution
         selector = self._substitute_variables(selector, context)
         value = self._substitute_variables(value, context)
+        
+        # Date format conversion
+        if date_format and value:
+            value = self._convert_date(value, date_format)
         
         # Skip jika value kosong
         if skip_if_empty and not value:
@@ -149,3 +155,88 @@ class InputTextAction(BaseAction):
             result = result.replace(f"{{{{variables.{key}}}}}", str(value))
         
         return result
+    
+    def _convert_date(self, value: str, date_format: str) -> str:
+        """Convert date format dari Excel ke format web.
+        
+        Args:
+            value: Nilai tanggal dari Excel, contoh "05|02|1976"
+            date_format: Format string "input_format|output_format"
+                         Contoh: "dd|MM|yyyy|dd/MM/yyyy"
+        
+        Returns:
+            Tanggal dalam format web, contoh "05/02/1976"
+        """
+        if not date_format or "|" not in date_format:
+            return value
+        
+        parts = date_format.split("|")
+        if len(parts) != 2:
+            return value
+        
+        input_fmt, output_fmt = parts
+        
+        # Parse input format menjadi tokens
+        input_tokens = []
+        i = 0
+        while i < len(input_fmt):
+            if i + 1 < len(input_fmt) and input_fmt[i] == 'M' and input_fmt[i+1] == 'M':
+                input_tokens.append('MM')
+                i += 2
+            elif i + 1 < len(input_fmt) and input_fmt[i] == 'd' and input_fmt[i+1] == 'd':
+                input_tokens.append('dd')
+                i += 2
+            elif i + 3 < len(input_fmt) and input_fmt[i:i+4] == 'yyyy':
+                input_tokens.append('yyyy')
+                i += 4
+            else:
+                input_tokens.append(input_fmt[i])
+                i += 1
+        
+        # Parse output format menjadi tokens
+        output_tokens = []
+        i = 0
+        while i < len(output_fmt):
+            if i + 1 < len(output_fmt) and output_fmt[i] == 'M' and output_fmt[i+1] == 'M':
+                output_tokens.append('MM')
+                i += 2
+            elif i + 1 < len(output_fmt) and output_fmt[i] == 'd' and output_fmt[i+1] == 'd':
+                output_tokens.append('dd')
+                i += 1
+            elif i + 3 < len(output_fmt) and output_fmt[i:i+4] == 'yyyy':
+                output_tokens.append('yyyy')
+                i += 4
+            else:
+                output_tokens.append(output_fmt[i])
+                i += 1
+        
+        # Extract values dari input string
+        input_str = value
+        values = {}
+        pos = 0
+        for token in input_tokens:
+            if token in ('dd', 'MM', 'yyyy'):
+                # Find next separator or end
+                sep = None
+                for s in ['/', '-', '.', '|']:
+                    idx = input_str.find(s, pos)
+                    if idx != -1:
+                        sep = s
+                        break
+                if sep:
+                    val = input_str[pos:idx]
+                    pos = idx + 1
+                else:
+                    val = input_str[pos:]
+                    pos = len(input_str)
+                values[token] = val
+        
+        # Build output string
+        result = []
+        for token in output_tokens:
+            if token in values:
+                result.append(values[token])
+            else:
+                result.append(token)
+        
+        return ''.join(result)
