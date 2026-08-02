@@ -170,7 +170,7 @@
       "type": "wait",
       "label": "Tunggu form entri pemilik terisi",
       "params": {
-        "duration": 1000,
+        "duration": 100000,
         "timeout": 10000,
         "wait_for_load_state": "none",
         "wait_type": "fixed"
@@ -500,7 +500,7 @@
       "type": "click",
       "label": "Klik tombol Tambah (Simpan Pemilik)",
       "params": {
-        "selector": "#btn-tambah",
+        "selector": "#frmPemohonNonDukcapil #btn-tambah",
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
@@ -550,5 +550,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T22:25:52.504725"
+  "updated_at": "2026-08-02T22:43:14.223439"
 }
