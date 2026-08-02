@@ -479,16 +479,19 @@
     },
     {
       "id": "step_15",
-      "type": "click",
-      "label": "Klik tombol Tambah (Simpan Pemilik)",
+      "type": "http_submit",
+      "label": "Submit form pemilik via HTTP",
       "params": {
-        "selector": "#btn-tambah",
+        "form_selector": "#frmPemohonNonDukcapil",
         "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
+        "submit_selector": "#btn-tambah",
+        "extra_data": {
+          "statusdukcapil": "0",
+          "tipebuktiid": "1",
+          "tipepemilikid": "1"
+        },
         "wait_after": 500,
-        "use_evaluate": true
+        "timeout": 30000
       },
       "on_error": "stop",
       "retry": {
