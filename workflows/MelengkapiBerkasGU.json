@@ -170,7 +170,7 @@
       "type": "wait",
       "label": "Tunggu form entri pemilik terisi",
       "params": {
-        "duration": 100000,
+        "duration": 1000,
         "timeout": 10000,
         "wait_for_load_state": "none",
         "wait_type": "fixed"
@@ -186,10 +186,11 @@
       "type": "click",
       "label": "Buka dropdown tipe pemilik",
       "params": {
+        "force": true,
         "selector": ".dropdown-toggle[data-toggle='dropdown']",
         "selector_type": "css",
-        "force": true,
         "timeout": 5000,
+        "wait_after": 500,
         "wait_for_load_state": "none"
       },
       "on_error": "stop",
@@ -203,9 +204,9 @@
       "type": "click",
       "label": "Pilih Perorangan tanpa cek NIK",
       "params": {
+        "force": true,
         "selector": "//a[contains(@onclick, \"ShowInputPemohon(5)\")]",
         "selector_type": "xpath",
-        "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none"
       },
@@ -391,5 +392,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T21:40:11.824463"
+  "updated_at": "2026-08-02T21:47:16.777031"
 }
