@@ -465,24 +465,6 @@
     },
     {
       "id": "step_14",
-      "type": "click",
-      "label": "Klik tombol Cek Dukcapil",
-      "params": {
-        "selector": "#btnceknik",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
-        "wait_after": 500
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_15",
       "type": "wait",
       "label": "Wait sebelum submit",
       "params": {
@@ -496,7 +478,7 @@
       }
     },
     {
-      "id": "step_16",
+      "id": "step_15",
       "type": "click",
       "label": "Klik tombol Tambah (Simpan Pemilik)",
       "params": {
@@ -514,7 +496,7 @@
       }
     },
     {
-      "id": "step_17",
+      "id": "step_16",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {
@@ -529,7 +511,7 @@
       }
     },
     {
-      "id": "step_18",
+      "id": "step_17",
       "type": "navigate",
       "label": "Buka ulang halaman Berkas Saya",
       "params": {
