@@ -77,7 +77,7 @@ class Select2Action(BaseAction):
 
             click_target = f"{adjacent_trigger}, {container_trigger}"
 
-            await page.wait_for_selector(click_target, state="visible", timeout=timeout)
+            await page.locator(click_target).first.wait_for(state="visible", timeout=timeout)
 
             await page.locator(click_target).first.click(timeout=timeout)
             await asyncio.sleep(0.5)
