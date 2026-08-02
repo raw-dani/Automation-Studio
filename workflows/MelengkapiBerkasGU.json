@@ -251,7 +251,7 @@
         },
         {
           "id": "step_9d",
-          "type": "input_text",
+          "type": "input_date",
           "label": "Input Tanggal Lahir",
           "params": {
             "clear_first": true,

@@ -26,7 +26,7 @@ CATEGORY_COLORS = {
 # Map category to action types
 CATEGORY_ACTIONS = {
     "Navigation": ["click", "wait", "navigate"],
-    "Input": ["input_text", "select", "select2", "select_dropdown", "radio_select", "upload_file", "http_submit"],
+    "Input": ["input_text", "input_date", "select", "select2", "select_dropdown", "radio_select", "upload_file", "http_submit"],
     "Logic": ["loop", "if_else", "parallel_group"],
     "Detection": ["ocr", "image_detect"],
     "Data": ["extract", "transform"],

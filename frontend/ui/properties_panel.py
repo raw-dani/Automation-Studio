@@ -219,7 +219,7 @@ class ChildStepItem(QFrame):
         # Type selector
         self._edit_type_combo = QComboBox()
         self._edit_type_combo.addItems([
-            "click", "http_submit", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "click", "http_submit", "input_text", "input_date", "select", "select2", "select_dropdown", "radio_select",
             "wait", "upload_file", "navigate",
         ])
         self._edit_type_combo.setCurrentText(self.action_type)
@@ -515,7 +515,7 @@ class PropertiesPanel(QWidget):
         type_label = QLabel("Type:")
         self.type_combo = QComboBox()
         self.type_combo.addItems([
-            "click", "http_submit", "input_text", "select", "select2", "select_dropdown", "radio_select",
+            "click", "http_submit", "input_text", "input_date", "select", "select2", "select_dropdown", "radio_select",
             "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
         ])
         self.type_combo.setCurrentText(action_type)
@@ -548,6 +548,16 @@ class PropertiesPanel(QWidget):
             self._add_field("type_delay", self.current_params.get("type_delay", 50))
             self._add_field("wait_before", self.current_params.get("wait_before", 500))
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
+            self._add_field("timeout", self.current_params.get("timeout", 30000))
+
+        elif action_type == "input_date":
+            self._add_field("selector", self.current_params.get("selector", ""))
+            self._add_field("selector_type", self.current_params.get("selector_type", "css"))
+            self._add_field("value", self.current_params.get("value", ""))
+            self._add_field("date_format", self.current_params.get("date_format", "dd|MM|yyyy->dd/MM/yyyy"))
+            self._add_field("clear_first", self.current_params.get("clear_first", True))
+            self._add_field("wait_before", self.current_params.get("wait_before", 0))
+            self._add_field("wait_after", self.current_params.get("wait_after", 0))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
 
         elif action_type == "select":

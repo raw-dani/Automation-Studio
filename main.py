@@ -30,6 +30,7 @@ from backend.core.workflow_parser import WorkflowParser, WorkflowValidationError
 # Actions
 from backend.actions.click_action import ClickAction
 from backend.actions.input_text_action import InputTextAction
+from backend.actions.input_date_action import InputDateAction
 from backend.actions.wait_action import WaitAction
 from backend.actions.select_dropdown_action import SelectDropdownAction
 from backend.actions.upload_file_action import UploadFileAction
@@ -97,6 +98,7 @@ def create_action_registry() -> ActionRegistry:
     # Phase 1: Basic actions
     registry.register(ClickAction())
     registry.register(InputTextAction())
+    registry.register(InputDateAction())
     registry.register(WaitAction())
     
     # Phase 2: Additional actions
