@@ -151,13 +151,12 @@
       "type": "click",
       "label": "Klik row berkas sesuai data",
       "params": {
-        "selector": "//tbody[@id='berkasplaceholder']//tr[td[2][contains(., '{{data.BERKAS}}/{{data.TAHUN}}')]]",
-        "selector_type": "xpath",
+        "selector": "#berkasplaceholder tr[onclick*=\"{{data.BERKAS}}/{{data.TAHUN}}\"]",
+        "selector_type": "css",
         "force": true,
         "timeout": 5000,
         "wait_for_load_state": "none",
-        "wait_after": 500,
-        "use_evaluate": true
+        "wait_after": 500
       },
       "on_error": "stop",
       "retry": {
