@@ -477,7 +477,8 @@
         "value": "{{data.Akurasi Bidang}}",
         "clear_first": true,
         "selector_type": "css",
-        "timeout": 10000
+        "timeout": 10000,
+        "use_evaluate": true
       },
       "on_error": "stop",
       "retry": {
