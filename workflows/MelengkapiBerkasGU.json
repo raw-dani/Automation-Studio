@@ -31,9 +31,9 @@
       "type": "wait",
       "label": "Tunggu proses login selesai",
       "params": {
-        "wait_type": "fixed",
-        "duration": 3000,
-        "timeout": 10000
+        "duration": 300000,
+        "timeout": 10000,
+        "wait_type": "fixed"
       },
       "on_error": "stop",
       "retry": {
@@ -57,14 +57,15 @@
     },
     {
       "id": "step_4",
-      "type": "click",
-      "label": "Klik tab Entri Berkas",
+      "type": "select2",
+      "label": "Pilih Desa via Select2",
       "params": {
-        "selector": "#profile-tab",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none"
+        "clear_first": true,
+        "selector": "#desa",
+        "timeout": 10000,
+        "value": "{{data.ALAMAT}}",
+        "wait_after": 100,
+        "wait_before": 50
       },
       "on_error": "stop",
       "retry": {
@@ -74,12 +75,16 @@
     },
     {
       "id": "step_5",
-      "type": "wait",
-      "label": "Tunggu form Entri Berkas siap",
+      "type": "input_text",
+      "label": "Input Nomor Berkas",
       "params": {
-        "wait_type": "until_visible",
-        "selector": "#inputpemohonplaceholder",
-        "timeout": 10000
+        "clear_first": true,
+        "selector": "#nomorberkas",
+        "selector_type": "css",
+        "timeout": 10000,
+        "value": "{{data.BERKAS}}",
+        "wait_after": 100,
+        "wait_before": 50
       },
       "on_error": "stop",
       "retry": {
@@ -89,14 +94,16 @@
     },
     {
       "id": "step_6",
-      "type": "click",
-      "label": "Buka dropdown tipe pemilik",
+      "type": "input_text",
+      "label": "Input Tahun Berkas",
       "params": {
-        "selector": "#lblTipe",
+        "clear_first": true,
+        "selector": "#tahunberkas",
         "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none"
+        "timeout": 10000,
+        "value": "{{data.TAHUN}}",
+        "wait_after": 100,
+        "wait_before": 50
       },
       "on_error": "stop",
       "retry": {
@@ -107,12 +114,14 @@
     {
       "id": "step_7",
       "type": "click",
-      "label": "Pilih Perorangan tanpa cek NIK",
+      "label": "Klik tombol Cari",
       "params": {
-        "selector": "//a[contains(@onclick, \"ShowInputPemohon(5)\")]",
-        "selector_type": "xpath",
         "force": true,
+        "selector": "#find-btn",
+        "selector_type": "css",
         "timeout": 5000,
+        "wait_after": 100,
+        "wait_before": 500,
         "wait_for_load_state": "none"
       },
       "on_error": "stop",
@@ -124,11 +133,12 @@
     {
       "id": "step_8",
       "type": "wait",
-      "label": "Tunggu form pemilik NonDukcapil",
+      "label": "Tunggu hasil pencarian",
       "params": {
         "wait_type": "until_visible",
-        "selector": "#frmPemohonNonDukcapil",
-        "timeout": 10000
+        "selector": "#datatable",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
@@ -274,18 +284,18 @@
         "delay": 2000
       }
     },
-        {
-          "id": "step_11",
-          "type": "click",
-          "label": "Klik tombol Tambah (Simpan Pemilik)",
-          "params": {
-            "selector": "#btn-tambah",
-            "selector_type": "css",
-            "force": true,
-            "timeout": 5000,
-            "wait_for_load_state": "none",
-            "wait_after": 500
-          },
+    {
+      "id": "step_11",
+      "type": "click",
+      "label": "Klik tombol Tambah (Simpan Pemilik)",
+      "params": {
+        "selector": "#btn-tambah",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
       "on_error": "stop",
       "retry": {
         "max_retries": 3,
@@ -329,5 +339,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-01T16:48:00.000000"
+  "updated_at": "2026-08-02T19:04:08.237962"
 }
