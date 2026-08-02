@@ -208,7 +208,8 @@
         "selector": "#tab2 .dropdown-menu a[onclick*='ShowInputPemohon(5)']",
         "selector_type": "css",
         "timeout": 5000,
-        "wait_for_load_state": "none"
+        "wait_for_load_state": "none",
+        "use_evaluate": true
       },
       "on_error": "stop",
       "retry": {
