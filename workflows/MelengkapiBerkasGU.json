@@ -236,7 +236,7 @@
           "type": "input_text",
           "label": "Input NIK",
           "params": {
-            "selector": "#tNIK",
+            "selector": "#frmPemohonNonDukcapil #tNIK",
             "value": "{{data.NIK}}",
             "clear_first": true,
             "use_evaluate": true,
@@ -254,7 +254,7 @@
           "type": "input_text",
           "label": "Input Nama",
           "params": {
-            "selector": "#tNAMA_LENGKAP",
+            "selector": "#frmPemohonNonDukcapil #tNAMA_LENGKAP",
             "value": "{{data.NAMA}}",
             "clear_first": true,
             "use_fill": true,
@@ -272,7 +272,7 @@
           "type": "input_text",
           "label": "Input Alamat",
           "params": {
-            "selector": "#tALAMAT",
+            "selector": "#frmPemohonNonDukcapil #tALAMAT",
             "value": "{{data.ALAMAT}}",
             "clear_first": true,
             "use_fill": true,
@@ -290,7 +290,7 @@
           "type": "input_text",
           "label": "Input Lokasi",
           "params": {
-            "selector": "#tLOKASI",
+            "selector": "#frmPemohonNonDukcapil #tLOKASI",
             "value": "{{data.TEMPAT LAHIR}}",
             "clear_first": true,
             "use_fill": true,
@@ -308,7 +308,7 @@
           "type": "input_text",
           "label": "Input Kode Pos",
           "params": {
-            "selector": "#tKODE_POS",
+            "selector": "#frmPemohonNonDukcapil #tKODE_POS",
             "value": "",
             "clear_first": true,
             "use_fill": true,
@@ -326,7 +326,7 @@
           "type": "input_text",
           "label": "Input RT/RW",
           "params": {
-            "selector": "#tDUSUN",
+            "selector": "#frmPemohonNonDukcapil #tDUSUN",
             "value": "",
             "clear_first": true,
             "use_fill": true,
@@ -344,7 +344,7 @@
           "type": "input_text",
           "label": "Input Tempat Lahir",
           "params": {
-            "selector": "#tTEMPAT_LAHIR",
+            "selector": "#frmPemohonNonDukcapil #tTEMPAT_LAHIR",
             "value": "{{data.TEMPAT LAHIR}}",
             "clear_first": true,
             "use_fill": true,
@@ -362,7 +362,7 @@
           "type": "input_date",
           "label": "Input Tanggal Lahir",
           "params": {
-            "selector": "#tTANGGAL_LAHIR",
+            "selector": "#frmPemohonNonDukcapil #tTANGGAL_LAHIR",
             "value": "{{data.TANGGAL LAHIR}}",
             "date_format": "dd|MM|yyyy->dd/MM/yyyy",
             "clear_first": true,
@@ -380,7 +380,7 @@
           "type": "radio_select",
           "label": "Pilih Jenis Kelamin",
           "params": {
-            "selector": "#JENIS_KELAMIN",
+            "selector": "#frmPemohonNonDukcapil #JENIS_KELAMIN",
             "value": "Laki-laki",
             "wait_before": 0,
             "wait_after": 0
@@ -396,7 +396,7 @@
           "type": "input_text",
           "label": "Input Golongan Darah",
           "params": {
-            "selector": "#tGOLONGAN_DARAH",
+            "selector": "#frmPemohonNonDukcapil #tGOLONGAN_DARAH",
             "value": "",
             "clear_first": true,
             "use_fill": true,
@@ -414,7 +414,7 @@
           "type": "input_text",
           "label": "Input Status",
           "params": {
-            "selector": "#tSTATUS_KAWIN",
+            "selector": "#frmPemohonNonDukcapil #tSTATUS_KAWIN",
             "value": "{{data.STATUS}}",
             "clear_first": true,
             "use_fill": true,
@@ -432,7 +432,7 @@
           "type": "input_text",
           "label": "Input Agama",
           "params": {
-            "selector": "#tAGAMA",
+            "selector": "#frmPemohonNonDukcapil #tAGAMA",
             "value": "",
             "clear_first": true,
             "use_fill": true,
@@ -450,7 +450,7 @@
           "type": "select2",
           "label": "Pilih Pekerjaan",
           "params": {
-            "selector": "#tJENIS_PEKERJAAN",
+            "selector": "#frmPemohonNonDukcapil #tJENIS_PEKERJAAN",
             "value": "Tidak Bekerja",
             "wait_before": 0,
             "wait_after": 0
@@ -550,5 +550,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T22:12:18.361727"
+  "updated_at": "2026-08-02T22:25:52.504725"
 }
