@@ -24,6 +24,7 @@ class HttpSubmitAction(BaseAction):
             "form_selector": "",
             "selector_type": "css",
             "submit_selector": "",
+            "url": "",
             "extra_data": {},
             "wait_after": 0,
             "timeout": 10000,
@@ -45,6 +46,7 @@ class HttpSubmitAction(BaseAction):
 
         form_selector = params.get("form_selector", "")
         submit_selector = params.get("submit_selector", "")
+        url = params.get("url", "")
         extra_data = params.get("extra_data", {})
         wait_after = params.get("wait_after", 0)
         timeout = params.get("timeout", 10000)
@@ -56,6 +58,7 @@ class HttpSubmitAction(BaseAction):
             result = await page.evaluate("""async (args) => {
                 const formSel = args.formSel;
                 const submitSel = args.submitSel;
+                const url = args.url;
                 const extra = args.extra;
                 const form = document.querySelector(formSel);
                 if (!form) return {error: 'Form not found: ' + formSel};
@@ -77,8 +80,10 @@ class HttpSubmitAction(BaseAction):
                 }
 
                 const submitBtn = submitSel ? document.querySelector(submitSel) : null;
-                const actionUrl = submitBtn ? (submitBtn.formAction || form.action) : form.action;
+                const actionUrl = url || (submitBtn ? (submitBtn.formAction || form.action) : form.action);
                 const method = submitBtn ? (submitBtn.formMethod || form.method || 'POST') : (form.method || 'POST');
+
+                if (!actionUrl) return {error: 'Submit URL not found. Set form action, submit formAction, or pass url parameter.'};
 
                 try {
                     const resp = await fetch(actionUrl, {
@@ -95,7 +100,7 @@ class HttpSubmitAction(BaseAction):
                 } catch (e) {
                     return {error: 'Fetch failed: ' + e.message};
                 }
-            }""", {"formSel": form_selector, "submitSel": submit_selector, "extra": extra_data})
+            }""", {"formSel": form_selector, "submitSel": submit_selector, "url": url, "extra": extra_data})
 
             if "error" in result:
                 return ActionResult(

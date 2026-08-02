@@ -486,6 +486,7 @@
         "form_selector": "#frmPemohonNonDukcapil",
         "selector_type": "css",
         "submit_selector": "#btn-tambah",
+        "url": "/BerkasSaya/TambahPemohon",
         "extra_data": {
           "statusdukcapil": "0",
           "tipebuktiid": "1",
