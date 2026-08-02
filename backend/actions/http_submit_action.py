@@ -65,18 +65,8 @@ class HttpSubmitAction(BaseAction):
 
                 const fd = new FormData(form);
 
-                const data = {};
-                for (const [k, v] of fd.entries()) {
-                    if (data[k] !== undefined) {
-                        if (!Array.isArray(data[k])) data[k] = [data[k]];
-                        data[k].push(v);
-                    } else {
-                        data[k] = v;
-                    }
-                }
-
                 for (const [k, v] of Object.entries(extra)) {
-                    data[k] = v;
+                    fd.append(k, v);
                 }
 
                 const submitBtn = submitSel ? document.querySelector(submitSel) : null;
@@ -88,15 +78,13 @@ class HttpSubmitAction(BaseAction):
                 try {
                     const resp = await fetch(actionUrl, {
                         method: method.toUpperCase(),
-                        body: new URLSearchParams(data),
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                        },
+                        body: fd,
                         credentials: 'same-origin',
                     });
                     const text = await resp.text();
-                    return {url: actionUrl, status: resp.status, success: resp.ok, body: text};
+                    let parsed = null;
+                    try { parsed = JSON.parse(text); } catch (e) { parsed = text; }
+                    return {url: actionUrl, status: resp.status, success: resp.ok, body: text, parsed: parsed};
                 } catch (e) {
                     return {error: 'Fetch failed: ' + e.message};
                 }
@@ -110,6 +98,14 @@ class HttpSubmitAction(BaseAction):
                 )
 
             if result.get("success") or result.get("status") == 302:
+                parsed = result.get("parsed")
+                if isinstance(parsed, dict) and parsed.get("Status") is False:
+                    return ActionResult(
+                        status=ActionStatus.FAILED,
+                        message="Server menolak submit: {}".format(parsed.get("Pesan", "Unknown error")),
+                        error="Business logic error",
+                        data={"server_response": parsed},
+                    )
                 return ActionResult(
                     status=ActionStatus.SUCCESS,
                     message="HTTP submit berhasil (status {})".format(result.get("status")),
