@@ -215,7 +215,7 @@
         {
           "id": "step_9b",
           "type": "input_text",
-          "label": "Input Nama Pemilik",
+          "label": "Input Nama Lengkap",
           "params": {
             "selector": "#tNAMA_LENGKAP",
             "value": "{{data.NAMA}}",
@@ -233,42 +233,6 @@
         {
           "id": "step_9c",
           "type": "input_text",
-          "label": "Input Alamat",
-          "params": {
-            "selector": "#tALAMAT",
-            "value": "{{data.ALAMAT}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_9d",
-          "type": "input_text",
-          "label": "Input Lokasi",
-          "params": {
-            "selector": "#tLOKASI",
-            "value": "{{data.TEMPAT LAHIR}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_9e",
-          "type": "input_text",
           "label": "Input Tempat Lahir",
           "params": {
             "selector": "#tTEMPAT_LAHIR",
@@ -285,12 +249,12 @@
           }
         },
         {
-          "id": "step_9f",
+          "id": "step_9d",
           "type": "input_text",
-          "label": "Input Status Kawin",
+          "label": "Input Tanggal Lahir",
           "params": {
-            "selector": "#tSTATUS_KAWIN",
-            "value": "{{data.STATUS}}",
+            "selector": "#tTANGGAL_LAHIR",
+            "value": "{{data.TANGGAL LAHIR}}",
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
@@ -306,6 +270,24 @@
     },
     {
       "id": "step_12",
+      "type": "click",
+      "label": "Klik tombol Cek Dukcapil",
+      "params": {
+        "selector": "#btnceknik",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_13",
       "type": "wait",
       "label": "Wait sebelum submit",
       "params": {
@@ -319,7 +301,7 @@
       }
     },
     {
-      "id": "step_13",
+      "id": "step_14",
       "type": "click",
       "label": "Klik tombol Tambah (Simpan Pemilik)",
       "params": {
@@ -337,7 +319,7 @@
       }
     },
     {
-      "id": "step_14",
+      "id": "step_15",
       "type": "wait",
       "label": "Wait loading selesai",
       "params": {
@@ -352,7 +334,7 @@
       }
     },
     {
-      "id": "step_15",
+      "id": "step_16",
       "type": "navigate",
       "label": "Buka ulang halaman Berkas Saya",
       "params": {
@@ -373,5 +355,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-02T19:24:41.487814"
+  "updated_at": "2026-08-02T19:46:56.755170"
 }
