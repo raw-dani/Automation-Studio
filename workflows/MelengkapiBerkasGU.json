@@ -380,7 +380,8 @@
           "type": "radio_select",
           "label": "Pilih Jenis Kelamin",
           "params": {
-            "selector": "#frmPemohonNonDukcapil #JENIS_KELAMIN",
+            "selector": "#frmPemohonNonDukcapil input[name='JENIS_KELAMIN']",
+            "select_by": "value",
             "value": "Laki-laki",
             "wait_before": 0,
             "wait_after": 0
