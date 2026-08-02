@@ -254,7 +254,7 @@
             "selector": "#frmPemohonNonDukcapil #tNIK",
             "value": "{{data.NIK}}",
             "clear_first": true,
-            "use_evaluate": true,
+            "use_fill": true,
             "wait_before": 0,
             "wait_after": 0
           },
