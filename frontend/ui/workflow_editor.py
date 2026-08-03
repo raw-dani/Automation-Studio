@@ -136,11 +136,11 @@ class WorkflowEditor(QWidget):
 
             colors = WORKFLOW_COLORS.get(step.type, WORKFLOW_COLORS["default"])
             bg, border, text = colors
-
+            
             item = QTreeWidgetItem(parent_item)
             item.setText(0, str(idx))
             item.setText(1, step.label or step.id)
-            item.setText(2, step.type)
+            item.setText(2, step.type or "unknown")
             item.setText(3, self._summarize_params(step.params))
             item.setText(4, "")
             item.setData(0, Qt.UserRole, step.id)
@@ -247,13 +247,21 @@ class WorkflowEditor(QWidget):
 
         self.node_selected.emit(step_id, params, action_type)
 
-    def _find_step(self, steps, step_id):
-        """Cari step secara rekursif."""
+    def _find_step(self, steps, step_id, _visited=None):
+        """Cari step secara rekursif dengan safety check untuk mencegah infinite recursion."""
+        if _visited is None:
+            _visited = set()
+        
         for step in steps:
+            step_key = id(step)
+            if step_key in _visited:
+                continue
+            _visited.add(step_key)
+            
             if step.id == step_id:
                 return step
             if step.children:
-                found = self._find_step(step.children, step_id)
+                found = self._find_step(step.children, step_id, _visited)
                 if found:
                     return found
         return None
@@ -334,7 +342,7 @@ class WorkflowEditor(QWidget):
                 "label": step.label,
                 "params": dict(step.params),
                 "on_error": step.on_error,
-                "retry": {"max_retries": 3, "delay": 2000},
+                "retry": dict(step.retry) if step.retry else {"max_retries": 3, "delay": 2000},
             }
 
             if step.children:
@@ -364,7 +372,7 @@ class WorkflowEditor(QWidget):
                 "label": c.label,
                 "params": dict(c.params),
                 "on_error": c.on_error,
-                "retry": {"max_retries": 3, "delay": 2000},
+                "retry": dict(c.retry) if c.retry else {"max_retries": 3, "delay": 2000},
             }
             if c.children:
                 child_dict["steps"] = self._serialize_children(c.children)
@@ -401,6 +409,8 @@ class WorkflowEditor(QWidget):
             workflow = parser.parse(data)
             self.load_workflow(workflow)
         except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Workflow Error", f"Gagal memuat workflow:\n{str(e)}")
             print(f"Failed to load workflow data: {e}")
 
     def update_node_params(self, step_id: str, params: dict):
@@ -471,7 +481,7 @@ class WorkflowEditor(QWidget):
         item = QTreeWidgetItem(parent_item)
         item.setText(0, str(idx))
         item.setText(1, step.label or step.id)
-        item.setText(2, step.type)
+        item.setText(2, step.type or "unknown")
         item.setText(3, self._summarize_params(step.params))
         item.setText(4, "")
         item.setData(0, Qt.UserRole, step.id)
