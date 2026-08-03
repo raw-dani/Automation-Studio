@@ -84,8 +84,16 @@ class HttpSubmitAction(BaseAction):
                     const text = await resp.text();
                     let parsed = null;
                     try { parsed = JSON.parse(text); } catch (e) { parsed = text; }
+                    
+                    if (typeof $ !== 'undefined' && typeof $.unblockUI === 'function') {
+                        $.unblockUI();
+                    }
+                    
                     return {url: actionUrl, status: resp.status, success: resp.ok, body: text, parsed: parsed};
                 } catch (e) {
+                    if (typeof $ !== 'undefined' && typeof $.unblockUI === 'function') {
+                        $.unblockUI();
+                    }
                     return {error: 'Fetch failed: ' + e.message};
                 }
             }""", {"formSel": form_selector, "submitSel": submit_selector, "url": url, "extra": extra_data})
