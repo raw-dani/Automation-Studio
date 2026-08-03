@@ -6,9 +6,9 @@ Dilengkapi: search filter, double-click add, collapsible categories, action badg
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
     QGroupBox, QScrollArea, QPushButton, QFrame, QLineEdit,
-    QSizePolicy, QApplication,
+    QApplication,
 )
-from PySide6.QtCore import Qt, Signal, QSize, QTimer, QPropertyAnimation, QEasingCurve
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, QPropertyAnimation, QEasingCurve, QMimeData
 from PySide6.QtGui import QFont, QDrag, QPixmap, QPainter, QColor, QIcon, QMouseEvent
 
 from backend.core.action_registry import ActionRegistry
@@ -167,6 +167,16 @@ class ActionItem(QFrame):
         """Double-click to add action directly to editor."""
         if event.button() == Qt.LeftButton:
             self.action_activated.emit(self.action_name, {}, True)
+
+    def _get_mime_data(self) -> QMimeData:
+        """Create mime data for drag operation."""
+        mime_data = QMimeData()
+        mime_data.setText(self.action_name)
+        return mime_data
+
+    def get_description(self) -> str:
+        """Get action description."""
+        return self._description
 
 
 class CategoryGroup(QWidget):
@@ -517,7 +527,7 @@ class ActionPalette(QWidget):
                     original = self._all_action_items[action_name]
                     recent_item = ActionItem(
                         original.action_name,
-                        original._description,
+                        original.get_description(),
                         "Recently Used"
                     )
                     recent_item.action_activated.connect(self._on_action_activated)
