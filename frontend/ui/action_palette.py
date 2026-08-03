@@ -160,7 +160,6 @@ class ActionItem(QFrame):
             drag.setHotSpot(hot_spot)
             drag.setPixmap(pixmap)
 
-            self.action_activated.emit(self.action_name, {}, False)
             drag.exec(Qt.CopyAction)
 
     def mouseDoubleClickEvent(self, event: QMouseEvent):

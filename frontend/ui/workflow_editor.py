@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QLabel, QPushButton,
     QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox
 )
-from PySide6.QtCore import Qt, Signal, QSize
+from PySide6.QtCore import Qt, Signal, QSize, QMimeData
 from PySide6.QtGui import QFont, QColor, QBrush, QIcon
 
 from backend.core.workflow_parser import Workflow, WorkflowStep
@@ -95,7 +95,9 @@ class WorkflowEditor(QWidget):
         self.tree.setColumnWidth(3, 260)
         self.tree.setColumnWidth(4, 110)
         self.tree.setAlternatingRowColors(True)
-        self.tree.setSelectionMode(QTreeWidget.SingleSelection)
+        self.tree.setAcceptDrops(True)
+        self.tree.setDragDropMode(QTreeWidget.DropOnly)
+        self.tree.setDefaultDropAction(Qt.CopyAction)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._on_context_menu)
         self.tree.itemSelectionChanged.connect(self._on_selection_changed)
@@ -118,6 +120,35 @@ class WorkflowEditor(QWidget):
             }
         """)
         layout.addWidget(self.tree)
+
+    # ==================== DRAG & DROP ====================
+
+    def dragEnterEvent(self, event):
+        """Accept drag if it contains text (action name)."""
+        mime = event.mimeData()
+        if mime.hasText():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        """Accept drag move."""
+        mime = event.mimeData()
+        if mime.hasText():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        """Handle drop - add action node from palette."""
+        mime = event.mimeData()
+        if mime.hasText():
+            action_type = mime.text().strip()
+            if action_type and self.workflow:
+                self.add_action_node(action_type)
+                event.acceptProposedAction()
+                return
+        event.ignore()
 
     def load_workflow(self, workflow: Workflow):
         """Load workflow ke tree view."""
