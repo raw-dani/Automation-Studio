@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QGroupBox, QScrollArea, QPushButton, QFrame, QLineEdit,
     QApplication,
 )
-from PySide6.QtCore import Qt, Signal, QSize, QTimer, QPropertyAnimation, QEasingCurve, QMimeData
+from PySide6.QtCore import Qt, Signal, QSize, QTimer, QPropertyAnimation, QEasingCurve, QMimeData, QPoint
 from PySide6.QtGui import QFont, QDrag, QPixmap, QPainter, QColor, QIcon, QMouseEvent
 
 from backend.core.action_registry import ActionRegistry
@@ -152,7 +152,7 @@ class ActionItem(QFrame):
             pixmap.fill(Qt.transparent)
             painter = QPainter(pixmap)
             painter.setOpacity(0.8)
-            self.render(painter)
+            self.render(painter, QPoint(0, 0))
             painter.end()
 
             # Set hot spot to cursor position
