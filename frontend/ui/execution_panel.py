@@ -653,7 +653,7 @@ class ExecutionPanel(QWidget):
 
     def _setup_step_by_step_worker(self):
         """Setup custom progress callback for step-by-step mode."""
-        original_callback = self.engine._on_progress
+        original_callback = getattr(self.engine, '_on_progress', None)
 
         def step_by_step_callback(progress):
             if original_callback:

@@ -698,7 +698,7 @@ class MainWindow(QMainWindow):
         """Handle save request from properties panel."""
         if not self.current_workflow or not self.current_file:
             self.status_label.setText("No workflow to save")
-            self.properties_panel.save_requested.emit()
+            QMessageBox.warning(self, "No Workflow", "No workflow loaded or file path set.\nPlease create or open a workflow first.")
             return
 
         try:

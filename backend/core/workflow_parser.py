@@ -126,8 +126,11 @@ class WorkflowParser:
         self._validate_step(data)
         
         children = []
-        if data["type"] in ("if_else", "loop", "parallel_group"):
-            for child_data in data.get("then", []) + data.get("else", []) + data.get("steps", []):
+        if data["type"] == "if_else":
+            for child_data in data.get("then", []) + data.get("else", []):
+                children.append(self._parse_step(child_data))
+        elif data["type"] in ("loop", "parallel_group"):
+            for child_data in data.get("steps", []):
                 children.append(self._parse_step(child_data))
         
         return WorkflowStep(

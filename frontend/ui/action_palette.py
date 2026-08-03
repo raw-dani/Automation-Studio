@@ -514,11 +514,14 @@ class ActionPalette(QWidget):
             self.recent_group.setVisible(True)
             for action_name in self._recently_used:
                 if action_name in self._all_action_items:
-                    # Create a copy-like reference (we reuse the same item logic)
                     original = self._all_action_items[action_name]
-                    # Actually we just show the original item in both places
-                    # For simplicity, we just show the count
-                    pass
+                    recent_item = ActionItem(
+                        original.action_name,
+                        original._description,
+                        "Recently Used"
+                    )
+                    recent_item.action_activated.connect(self._on_action_activated)
+                    self.recent_group.add_action(recent_item)
 
             # Update label
             recent_text = " | ".join(self._recently_used[:3])
