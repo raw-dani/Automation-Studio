@@ -5,7 +5,7 @@
   "url": "https://skb.atrbpn.go.id/PetaBidangTanah/MelengkapiBidangTanah",
   "data_source": {
     "config": {
-      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BIDANG DESA GUMIRIH BLOK 1.xlsx",
+      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOUT MELENGKAPI BIDANG DESA GUMIRIH BLOK 50, 53.xlsx",
       "sheet": "Sheet1"
     },
     "type": "excel"
@@ -31,7 +31,7 @@
       "type": "wait",
       "label": "Tunggu proses login selesai",
       "params": {
-        "duration": 3000,
+        "duration": 300,
         "selector": "",
         "timeout": 10000,
         "wait_after": 0,
@@ -150,6 +150,91 @@
     },
     {
       "id": "step_9",
+      "type": "wait",
+      "label": "Tunggu form Lengkapi Bidang terisi",
+      "params": {
+        "wait_type": "fixed",
+        "duration": 1000,
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_10",
+      "type": "input_text",
+      "label": "Input NIB untuk cari bidang",
+      "params": {
+        "selector": "#carinib",
+        "value": "{{data.NIB}}",
+        "clear_first": true,
+        "selector_type": "css",
+        "timeout": 10000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_11",
+      "type": "click",
+      "label": "Klik tombol Cari NIB",
+      "params": {
+        "selector": "#frmCariBidang button[type=submit]",
+        "selector_type": "css",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_12",
+      "type": "wait",
+      "label": "Tunggu hasil tabel NIB muncul",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#datatable tbody tr",
+        "timeout": 10000,
+        "wait_for_load_state": "none"
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_13",
+      "type": "click",
+      "label": "Klik row NIB sesuai data",
+      "params": {
+        "selector": "//table[@id='datatable']//tr[td[2][contains(., '{{data.NIB}}')]]",
+        "selector_type": "xpath",
+        "force": true,
+        "timeout": 5000,
+        "wait_for_load_state": "none",
+        "wait_after": 500
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_14",
       "type": "wait",
       "label": "Tunggu form Lengkapi Bidang terisi",
       "params": {
@@ -372,7 +457,7 @@
       "label": "Pilih Alat Ukur",
       "params": {
         "select_by": "value",
-        "select_value": "Meteran",
+        "select_value": "GPS Geodetic",
         "selector": "#alatukur",
         "selector_type": "css",
         "timeout": 10000
@@ -394,91 +479,6 @@
         "selector_type": "css",
         "timeout": 10000,
         "use_evaluate": true
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_10",
-      "type": "input_text",
-      "label": "Input NIB untuk cari bidang",
-      "params": {
-        "selector": "#carinib",
-        "value": "{{data.NIB}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_11",
-      "type": "click",
-      "label": "Klik tombol Cari NIB",
-      "params": {
-        "selector": "#frmCariBidang button[type=submit]",
-        "selector_type": "css",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
-        "wait_after": 500
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_12",
-      "type": "wait",
-      "label": "Tunggu hasil tabel NIB muncul",
-      "params": {
-        "wait_type": "until_visible",
-        "selector": "#datatable tbody tr",
-        "timeout": 10000,
-        "wait_for_load_state": "none"
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_13",
-      "type": "click",
-      "label": "Klik row NIB sesuai data",
-      "params": {
-        "selector": "//table[@id='datatable']//tr[td[2][contains(., '{{data.NIB}}')]]",
-        "selector_type": "xpath",
-        "force": true,
-        "timeout": 5000,
-        "wait_for_load_state": "none",
-        "wait_after": 500
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_14",
-      "type": "wait",
-      "label": "Tunggu form Lengkapi Bidang terisi",
-      "params": {
-        "wait_type": "fixed",
-        "duration": 1000,
-        "timeout": 10000,
-        "wait_for_load_state": "none"
       },
       "on_error": "stop",
       "retry": {
@@ -540,5 +540,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T21:04:26.624510",
-  "updated_at": "2026-08-02T18:55:30.047380"
+  "updated_at": "2026-08-03T19:38:46.592745"
 }
