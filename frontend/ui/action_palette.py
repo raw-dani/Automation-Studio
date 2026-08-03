@@ -472,7 +472,13 @@ class ActionPalette(QWidget):
         self.actions_layout.addWidget(self.recent_group)
         self._category_groups["Recently Used"] = self.recent_group
 
+        available_categories = {}
         for category, action_names in CATEGORY_ACTIONS.items():
+            valid_actions = [name for name in action_names if self.action_registry.get(name)]
+            if valid_actions:
+                available_categories[category] = valid_actions
+
+        for category, action_names in available_categories.items():
             color = CATEGORY_COLORS.get(category, "#6b7280")
             group = CategoryGroup(category, color)
             self.actions_layout.addWidget(group)
