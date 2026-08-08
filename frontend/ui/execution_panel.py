@@ -47,11 +47,12 @@ STATUS_COLORS = {
 class StepListItem(QListWidgetItem):
     """Item untuk menampilkan step dalam list dengan status."""
 
-    def __init__(self, step_id: str, label: str, step_type: str, parent=None):
+    def __init__(self, step_id: str, label: str, step_type: str, depth: int = 0, parent=None):
         super().__init__(parent)
         self.step_id = step_id
         self._label = label or f"{step_type}: {step_id}"
         self._step_type = step_type
+        self._depth = depth
         self._status = "waiting"
         self._message = ""
         self._update_display()
@@ -67,7 +68,13 @@ class StepListItem(QListWidgetItem):
         icon = STATUS_ICONS.get(self._status, "○")
         color = STATUS_COLORS.get(self._status, "#999")
         type_short = self._step_type[:6]
-        self.setText(f"{icon} [{type_short}] {self._label}")
+
+        # Indentasi untuk nested steps (loop, if_else, parallel_group)
+        indent = "  " * self._depth if self._depth > 0 else ""
+        prefix = "└ " if self._depth > 0 else ""
+        parent_indicator = " 📁" if self._depth == 0 and self._step_type in ("loop", "if_else", "parallel_group") else ""
+
+        self.setText(f"{icon} [{type_short}] {indent}{prefix}{self._label}{parent_indicator}")
         self.setForeground(QColor(color))
 
         # Tooltip dengan detail
@@ -97,6 +104,7 @@ class ExecutionPanel(QWidget):
         super().__init__(parent)
         self.engine = engine
         self.current_workflow: Optional[Workflow] = None
+        self.url_label = ""  # URL dari workflow (untuk sinkronisasi)
         self._step_items: dict[str, StepListItem] = {}  # step_id -> StepListItem
         self._execution_count = 0
         self._step_by_step_mode = False
@@ -261,11 +269,18 @@ class ExecutionPanel(QWidget):
         self.session_mode_combo.setCurrentText("persistent")
         self.session_mode_combo.setFixedWidth(100)
         self.session_mode_combo.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.session_mode_combo.setToolTip(
+            "Mode sesi browser:\n"
+            "- default: Buat browser baru setiap eksekusi\n"
+            "- persistent: Gunakan folder sesi yang sama (login tersimpan)\n"
+            "- connect: Hubungkan ke browser yang sudah berjalan (CDP)"
+        )
         self.session_mode_combo.currentTextChanged.connect(self._on_session_mode_changed)
         settings_row1.addWidget(self.session_mode_combo)
 
         self.headless_cb = QCheckBox("Headless")
         self.headless_cb.setStyleSheet("font-size: 10px;")
+        self.headless_cb.setToolTip("Jalankan browser tanpa tampilan (background)")
         settings_row1.addWidget(self.headless_cb)
 
         settings_row1.addWidget(QLabel("Browser:"))
@@ -274,10 +289,12 @@ class ExecutionPanel(QWidget):
         self.browser_combo.setCurrentText("Chromium")
         self.browser_combo.setFixedWidth(90)
         self.browser_combo.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.browser_combo.setToolTip("Mesin browser yang digunakan untuk otomasi")
         settings_row1.addWidget(self.browser_combo)
 
         self.screenshot_step_cb = QCheckBox("Screenshot/Step")
         self.screenshot_step_cb.setStyleSheet("font-size: 10px;")
+        self.screenshot_step_cb.setToolTip("Ambil screenshot setiap kali step selesai")
         settings_row1.addWidget(self.screenshot_step_cb)
 
         settings_row1.addStretch()
@@ -500,9 +517,10 @@ class ExecutionPanel(QWidget):
             else:
                 self.url_input.setText("")
 
-            # Populate step list
+            # Populate step list dengan depth dari _flatten_steps
             for step in self._flatten_steps(workflow.steps):
-                item = StepListItem(step.id, step.label, step.type)
+                depth = getattr(step, "_depth", 0)
+                item = StepListItem(step.id, step.label, step.type, depth=depth)
                 self.step_list.addItem(item)
                 self._step_items[step.id] = item
 
@@ -963,9 +981,26 @@ class ExecutionPanel(QWidget):
             self.resume_from_cb.setStyleSheet("font-size: 10px;")
             self.resume_from_cb.setChecked(False)
 
-        # Update step count
+        # Update step count dengan detail
         self.step_count_label.setText(f"{success_count+failed_count}/{total}")
-        self.eta_label.setText(f"Duration: {self._format_duration(int(duration))}")
+
+        # Statistik akhir eksekusi
+        skipped_count = result.get("skipped_count", 0)
+        stats_text = f"✅ {success_count} sukses"
+        if failed_count:
+            stats_text += f" • ❌ {failed_count} gagal"
+        if skipped_count:
+            stats_text += f" • ⏭ {skipped_count} skip"
+        stats_text += f" • ⏱ {self._format_duration(int(duration))}"
+
+        self.eta_label.setText(stats_text)
+        self.eta_label.setToolTip(
+            f"Total Steps: {total}\n"
+            f"Success: {success_count}\n"
+            f"Failed: {failed_count}\n"
+            f"Skipped: {skipped_count}\n"
+            f"Duration: {self._format_duration(int(duration))}"
+        )
 
         self._waiting_for_step_continue = False
         self.continue_btn.setEnabled(False)

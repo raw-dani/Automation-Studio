@@ -124,6 +124,9 @@ class MainWindow(QMainWindow):
         self._init_statusbar()
         self._init_shortcuts()
 
+        # Tampilkan empty state di awal
+        self.workflow_editor.clear()
+
         # Connect signals
         self._connect_signals()
 
@@ -433,7 +436,14 @@ class MainWindow(QMainWindow):
         # Step count (center)
         self.step_count_label = QLabel("Steps: 0")
         self.step_count_label.setStyleSheet("color: #2196F3; font-weight: bold; padding: 0 8px;")
+        self.step_count_label.setToolTip("Total step di level atas (belum termasuk nested)")
         self.statusBar().addPermanentWidget(self.step_count_label)
+
+        # Data source indicator
+        self.data_source_label = QLabel("")
+        self.data_source_label.setStyleSheet("color: #9C27B0; font-weight: bold; padding: 0 8px;")
+        self.data_source_label.setToolTip("Data source yang digunakan workflow ini")
+        self.statusBar().addPermanentWidget(self.data_source_label)
 
         # Modified indicator
         self.modified_label = QLabel("")
@@ -521,6 +531,10 @@ class MainWindow(QMainWindow):
         self.workflow_editor.undo_available.connect(self.undo_action.setEnabled)
         self.workflow_editor.redo_available.connect(self.redo_action.setEnabled)
 
+        # Empty state actions
+        self.workflow_editor.new_workflow_requested.connect(self.new_workflow)
+        self.workflow_editor.open_workflow_requested.connect(self.open_workflow)
+
     # ==================== WORKFLOW METHODS ====================
 
     def _mark_modified(self):
@@ -546,20 +560,27 @@ class MainWindow(QMainWindow):
         """Sync editor state ke execution panel."""
         try:
             data = self.workflow_editor.to_workflow_data()
-            if data and data.get("steps"):
+            if data:
                 data["data_source"] = self.current_data_source
-                workflow = self.parser.parse(data)
-                self.execution_panel.set_workflow(workflow)
-                self.current_workflow = workflow
-                self._mark_modified()
+                if data.get("steps"):
+                    workflow = self.parser.parse(data)
+                    self.execution_panel.set_workflow(workflow)
+                    self.current_workflow = workflow
+                    self._mark_modified()
 
-                # Update step count
-                step_count = len(workflow.steps)
-                self.step_count_label.setText(f"Steps: {step_count}")
-            else:
-                self.execution_panel.set_workflow(None)
-                self.current_workflow = None
-                self.step_count_label.setText("Steps: 0")
+                    # Update step count
+                    step_count = len(workflow.steps)
+                    self.step_count_label.setText(f"Steps: {step_count}")
+                else:
+                    # Workflow kosong - pertahankan current_workflow yang ada
+                    # agar action masih bisa ditambahkan ke editor.
+                    if self.current_workflow:
+                        self.current_workflow.steps = []
+                        self.current_workflow.data_source = self.current_data_source
+                        self.execution_panel.set_workflow(self.current_workflow)
+                    else:
+                        self.execution_panel.set_workflow(None)
+                    self.step_count_label.setText("Steps: 0")
         except Exception:
             pass
 
@@ -569,6 +590,13 @@ class MainWindow(QMainWindow):
         if self.current_workflow:
             self.current_workflow.data_source = config
             self._mark_modified()
+
+        # Update data source indicator di status bar
+        ds_type = config.get("type", "none") if config else "none"
+        if ds_type and ds_type != "none":
+            self.data_source_label.setText(f"📊 {ds_type.upper()}")
+        else:
+            self.data_source_label.setText("")
 
     def _on_node_selected_for_properties(self, step_id: str, params: dict, action_type: str = ""):
         """Handle node selection untuk properties panel."""
@@ -783,10 +811,20 @@ class MainWindow(QMainWindow):
             self.execution_panel.set_workflow(workflow)
             self.data_source_manager.set_config(self.current_data_source)
             self._mark_saved()
-            self.setWindowTitle(f"Automation Studio - {workflow.name}")
+
+            # Update title dengan nama file
+            file_name = os.path.basename(file_path)
+            self.setWindowTitle(f"Automation Studio - {workflow.name} ({file_name})")
             self.workflow_info_label.setText(f"{workflow.name} (v{workflow.version})")
             self.step_count_label.setText(f"Steps: {len(workflow.steps)}")
             self.status_label.setText(f"Loaded: {file_path}")
+
+            # Update data source indicator
+            ds_type = self.current_data_source.get("type", "none") if self.current_data_source else "none"
+            if ds_type and ds_type != "none":
+                self.data_source_label.setText(f"📊 {ds_type.upper()}")
+            else:
+                self.data_source_label.setText("")
 
             self._add_recent_file(file_path)
 
@@ -804,10 +842,31 @@ class MainWindow(QMainWindow):
             if reply == QMessageBox.No:
                 return
 
-        self.current_workflow = None
+        # Buat Workflow kosong yang valid (bukan None) agar action bisa ditambahkan
+        now = datetime.now().isoformat()
+        new_workflow = Workflow(
+            id="workflow_new",
+            name="New Workflow",
+            version="1.0",
+            url="",
+            data_source={},
+            steps=[],  # Parser memvalidasi minimal 1 step, jadi jangan pakai parse() di sini
+            monitoring={
+                "screenshot_on_error": True,
+                "screenshot_on_step": False,
+                "log_level": "INFO"
+            },
+            created_at=now,
+            updated_at=now,
+        )
+
+        self.current_workflow = new_workflow
         self.current_file = None
         self.current_data_source = {}
-        self.workflow_editor.clear()
+
+        # Load workflow kosong ke editor (bukan clear() agar workflow tidak None)
+        self.workflow_editor.load_workflow(new_workflow)
+        self.execution_panel.set_workflow(new_workflow)
         self.properties_panel.clear()
         self.monitoring_panel.clear()
         self.data_source_manager.set_config({})
@@ -815,6 +874,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Automation Studio - New Workflow")
         self.workflow_info_label.setText("New workflow")
         self.step_count_label.setText("Steps: 0")
+        self.data_source_label.setText("")
         self.status_label.setText("New workflow created")
 
     def open_workflow(self):
@@ -961,11 +1021,34 @@ class MainWindow(QMainWindow):
             workflow = self.parser.parse(workflow_data)
 
             steps_count = len(workflow.steps)
+
+            # Hitung total steps termasuk nested
+            total_steps = steps_count
+
+            def count_nested(steps):
+                nonlocal total_steps
+                for s in steps:
+                    if s.children:
+                        total_steps += len(s.children)
+                        count_nested(s.children)
+
+            count_nested(workflow.steps)
+
+            # Data source info
+            ds_info = ""
+            if workflow.data_source and workflow.data_source.get("type"):
+                ds_info = f"\nData Source: {workflow.data_source['type'].upper()}"
+
             QMessageBox.information(
                 self, "Validation",
-                f"Workflow valid!\n\nName: {workflow.name}\nSteps: {steps_count}"
+                f"✅ Workflow valid!\n\n"
+                f"Name: {workflow.name}\n"
+                f"Version: {workflow.version}\n"
+                f"Steps (top-level): {steps_count}\n"
+                f"Total Steps (incl. nested): {total_steps}"
+                f"{ds_info}"
             )
-            self.status_label.setText(f"Validation OK: {steps_count} steps")
+            self.status_label.setText(f"Validation OK: {total_steps} total steps")
 
         except Exception as e:
             QMessageBox.warning(self, "Validation Error", str(e))

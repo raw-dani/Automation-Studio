@@ -128,6 +128,7 @@ class MonitoringPanel(QWidget):
         self._failed_steps = 0
         self._skipped_steps = 0
         self._current_status = "idle"
+        self._auto_scroll = True
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
@@ -143,6 +144,44 @@ class MonitoringPanel(QWidget):
         title.setStyleSheet("color: #333; padding: 8px;")
         layout.addWidget(title)
 
+        # ==================== STATUS HEADER ====================
+        self.status_header = QFrame()
+        self.status_header.setObjectName("statusHeader")
+        self.status_header.setStyleSheet("""
+            #statusHeader {
+                background: #F8FAFC;
+                border: 1px solid #E2E8F0;
+                border-radius: 6px;
+                padding: 6px 10px;
+            }
+        """)
+        status_header_layout = QHBoxLayout(self.status_header)
+        status_header_layout.setContentsMargins(10, 6, 10, 6)
+        status_header_layout.setSpacing(8)
+
+        # Status dot
+        self.status_dot = QLabel("●")
+        self.status_dot.setStyleSheet("color: #94A3B8; font-size: 14px;")
+        status_header_layout.addWidget(self.status_dot)
+
+        # Status text
+        self.status_header_text = QLabel("Belum ada eksekusi")
+        status_font = QFont()
+        status_font.setBold(True)
+        status_font.setPointSize(10)
+        self.status_header_text.setFont(status_font)
+        self.status_header_text.setStyleSheet("color: #64748B;")
+        status_header_layout.addWidget(self.status_header_text)
+
+        status_header_layout.addStretch()
+
+        # Current step indicator
+        self.current_step_label = QLabel("")
+        self.current_step_label.setStyleSheet("color: #2196F3; font-size: 9px; font-weight: bold;")
+        status_header_layout.addWidget(self.current_step_label)
+
+        layout.addWidget(self.status_header)
+
         # Tabs
         self.tabs = QTabWidget()
 
@@ -154,6 +193,24 @@ class MonitoringPanel(QWidget):
 
         # Log toolbar
         log_toolbar = QHBoxLayout()
+
+        # Auto-scroll toggle
+        self.auto_scroll_cb = QPushButton("📜 Auto-scroll: ON")
+        self.auto_scroll_cb.setCheckable(True)
+        self.auto_scroll_cb.setChecked(True)
+        self.auto_scroll_cb.setStyleSheet("""
+            QPushButton {
+                background: #E8F5E9; color: #2E7D32;
+                border: 1px solid #A5D6A7; border-radius: 3px;
+                padding: 4px 8px; font-size: 9px; font-weight: bold;
+            }
+            QPushButton:checked {
+                background: #2E7D32; color: white;
+            }
+        """)
+        self.auto_scroll_cb.toggled.connect(self._on_auto_scroll_toggled)
+        log_toolbar.addWidget(self.auto_scroll_cb)
+
         self.clear_log_btn = QPushButton("Clear")
         self.clear_log_btn.setStyleSheet("""
             QPushButton { background: #f44336; color: white; border: none;
@@ -348,6 +405,12 @@ class MonitoringPanel(QWidget):
         self.skipped_value.setStyleSheet("font-weight: bold; color: #FF9800;")
         stats_grid.addWidget(self.skipped_value, 3, 1)
 
+        # Success Rate
+        stats_grid.addWidget(QLabel("Success Rate:"), 3, 2)
+        self.success_rate_value = QLabel("-")
+        self.success_rate_value.setStyleSheet("font-weight: bold; color: #2196F3;")
+        stats_grid.addWidget(self.success_rate_value, 3, 3)
+
         summary_layout.addWidget(stats_widget)
 
         # Summary text (detailed log)
@@ -382,6 +445,41 @@ class MonitoringPanel(QWidget):
         self._duration_timer = QTimer()
         self._duration_timer.timeout.connect(self._update_duration_display)
         self._duration_timer.setInterval(1000)
+
+        # Inisialisasi status header
+        self._update_status_header("idle")
+
+    # ==================== STATUS HEADER ====================
+
+    def _update_status_header(self, status: str, step_id: str = ""):
+        """Update status header bar."""
+        status_config = {
+            "idle": ("●", "#94A3B8", "Idle - Belum ada eksekusi", "#64748B"),
+            "running": ("●", "#2196F3", "Running - Workflow sedang dieksekusi", "#1565C0"),
+            "success": ("●", "#4CAF50", "Success - Workflow selesai", "#2E7D32"),
+            "failed": ("●", "#f44336", "Failed - Workflow gagal", "#C62828"),
+            "completed_with_errors": ("●", "#FF9800", "Completed with errors", "#E65100"),
+            "stopped": ("●", "#607D8B", "Stopped - Dihentikan pengguna", "#455A64"),
+        }
+        dot, dot_color, text, text_color = status_config.get(
+            status, ("●", "#94A3B8", "Idle - Belum ada eksekusi", "#64748B")
+        )
+
+        self.status_dot.setText(dot)
+        self.status_dot.setStyleSheet(f"color: {dot_color}; font-size: 14px;")
+        self.status_header_text.setText(text)
+        self.status_header_text.setStyleSheet(f"color: {text_color}; font-weight: bold; font-size: 10px;")
+
+        if step_id:
+            self.current_step_label.setText(f"⚡ Step: {step_id}")
+        else:
+            self.current_step_label.setText("")
+
+    def _on_auto_scroll_toggled(self, checked: bool):
+        """Handle toggle auto-scroll."""
+        self._auto_scroll = checked
+        self.auto_scroll_cb.setText(f"📜 Auto-scroll: {'ON' if checked else 'OFF'}")
+
 
     # ==================== LOG METHODS ====================
 
@@ -425,10 +523,11 @@ class MonitoringPanel(QWidget):
         visible_count = self.log_text.document().blockCount()
         self.log_count_label.setText(f"{visible_count} visible / {len(self._all_logs)} total")
 
-        # Auto-scroll
-        cursor = self.log_text.textCursor()
-        cursor.movePosition(QTextCursor.End)
-        self.log_text.setTextCursor(cursor)
+        # Auto-scroll (hanya jika toggle aktif)
+        if self._auto_scroll:
+            cursor = self.log_text.textCursor()
+            cursor.movePosition(QTextCursor.End)
+            self.log_text.setTextCursor(cursor)
 
         # Auto-refresh screenshots
         if "Screenshot saved:" in message:
@@ -643,11 +742,23 @@ class MonitoringPanel(QWidget):
         self.status_value.setText(status.upper())
         self.status_value.setStyleSheet(f"font-weight: bold; color: {status_color};")
 
+        # Update status header
+        self._update_status_header(status, step_id)
+
         # Update counts
         self.total_steps_value.setText(str(total))
         self.completed_value.setText(str(completed))
         self.failed_value.setText(str(failed))
         self.skipped_value.setText(str(skipped))
+
+        # Hitung success rate
+        if total > 0:
+            success_rate = ((total - failed - skipped) / total) * 100
+            self.success_rate_value.setText(f"{success_rate:.1f}%")
+            rate_color = "#4CAF50" if success_rate >= 80 else ("#FF9800" if success_rate >= 50 else "#f44336")
+            self.success_rate_value.setStyleSheet(f"font-weight: bold; color: {rate_color};")
+        else:
+            self.success_rate_value.setText("-")
 
         # Update summary text
         summary_text = (
@@ -659,6 +770,9 @@ class MonitoringPanel(QWidget):
             f"Failed: {failed}\n"
             f"Skipped: {skipped}\n"
         )
+        if total > 0:
+            success_rate = ((total - failed - skipped) / total) * 100
+            summary_text += f"Success Rate: {success_rate:.1f}%\n"
         if status in ("success", "failed", "completed_with_errors"):
             if self._execution_start_time and self._execution_end_time:
                 duration = (self._execution_end_time - self._execution_start_time).total_seconds()
@@ -700,7 +814,9 @@ class MonitoringPanel(QWidget):
         self.completed_value.setText("0")
         self.failed_value.setText("0")
         self.skipped_value.setText("0")
+        self.success_rate_value.setText("-")
         self.summary_text.clear()
+        self._update_status_header("idle")
 
     def clear(self):
         """Bersihkan semua monitoring."""

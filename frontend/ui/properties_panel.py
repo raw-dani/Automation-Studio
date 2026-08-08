@@ -1,6 +1,6 @@
 """
 Properties Panel - Panel untuk mengkonfigurasi parameter action yang dipilih.
-Mendukung penuh parallel_group dengan tampilan child steps di dalamnya.
+Dilengkapi: action header card, field descriptions, modified indicator, reset button.
 """
 
 from PySide6.QtWidgets import (
@@ -29,6 +29,86 @@ ACTION_COLORS = {
     "parallel_group": "#009688",
     "navigate": "#9C27B0",
     "default": "#607D8B",
+}
+
+# Ikon per action type
+ACTION_ICONS = {
+    "click": "🖱️",
+    "wait": "⏳",
+    "navigate": "🧭",
+    "input_text": "✏️",
+    "input_date": "📅",
+    "select": "📋",
+    "select2": "📋",
+    "select_dropdown": "📑",
+    "radio_select": "🔘",
+    "upload_file": "📤",
+    "http_submit": "🌐",
+    "loop": "🔄",
+    "if_else": "🔀",
+    "parallel_group": "⚡",
+    "ocr": "👁️",
+    "image_detect": "🖼️",
+    "extract": "📊",
+    "transform": "🔧",
+}
+
+# Deskripsi singkat per action type
+ACTION_DESCRIPTIONS = {
+    "click": "Klik elemen pada halaman web",
+    "wait": "Tunggu selama durasi tertentu atau hingga kondisi terpenuhi",
+    "navigate": "Navigasi browser ke URL tertentu",
+    "input_text": "Isi teks ke input field",
+    "input_date": "Isi tanggal ke input field dengan format tertentu",
+    "select": "Pilih opsi dari dropdown/combobox",
+    "select2": "Pilih opsi menggunakan komponen Select2",
+    "select_dropdown": "Pilih opsi dari dropdown menu",
+    "radio_select": "Pilih radio button",
+    "upload_file": "Upload file ke halaman web",
+    "http_submit": "Submit data melalui HTTP request",
+    "loop": "Ulangi langkah-langkah di dalamnya",
+    "if_else": "Percabangan kondisi (then/else)",
+    "parallel_group": "Jalankan langkah-langkah secara paralel",
+    "ocr": "Deteksi teks menggunakan OCR",
+    "image_detect": "Deteksi gambar/elemen visual",
+    "extract": "Ekstrak data dari halaman",
+    "transform": "Transformasi data",
+}
+
+# Deskripsi per field parameter
+FIELD_DESCRIPTIONS = {
+    "selector": "CSS selector atau XPath untuk menemukan elemen target",
+    "selector_type": "Jenis selector yang digunakan (css, xpath, atau text)",
+    "value": "Nilai/teks yang akan diinput atau dipilih",
+    "label": "Label yang ditampilkan untuk step ini di workflow",
+    "url": "URL halaman yang akan dinavigasi",
+    "wait_until": "Kondisi yang harus terpenuhi sebelum melanjutkan",
+    "timeout": "Waktu maksimum (ms) menunggu elemen muncul",
+    "wait_before": "Jeda (ms) sebelum action dijalankan",
+    "wait_after": "Jeda (ms) setelah action selesai",
+    "force": "Paksa klik meskipun elemen tidak terlihat",
+    "clear_first": "Bersihkan field sebelum mengisi nilai baru",
+    "type_delay": "Jeda (ms) antara setiap karakter yang diketik",
+    "date_format": "Format tanggal yang digunakan (contoh: dd/MM/yyyy)",
+    "select_by": "Cara memilih opsi (label, value, atau index)",
+    "select_value": "Nilai opsi yang akan dipilih",
+    "file_path": "Path lengkap file yang akan diupload",
+    "form_selector": "Selector untuk form yang akan disubmit",
+    "submit_selector": "Selector untuk tombol submit",
+    "loop_type": "Jenis loop (count, data_source, atau while)",
+    "count": "Jumlah iterasi untuk loop",
+    "data_key": "Key data source yang akan di-loop",
+    "condition": "Kondisi untuk loop while atau if_else",
+    "max_iterations": "Batas maksimum iterasi untuk mencegah infinite loop",
+    "variable_name": "Nama variabel untuk menyimpan hasil",
+    "expected_value": "Nilai yang diharapkan untuk kondisi if_else",
+    "options": "Daftar opsi yang tersedia (dipisahkan koma)",
+    "selected": "Opsi yang sudah dipilih",
+    "search_selector": "Selector untuk field pencarian Select2",
+    "stagger_delay": "Jeda (ms) antara setiap child step paralel",
+    "on_error": "Strategi penanganan error (stop, skip, retry)",
+    "duration": "Durasi tunggu (ms) untuk wait action",
+    "wait_type": "Jenis wait (fixed, until_visible, until_hidden, until_selector)",
 }
 
 
@@ -410,13 +490,15 @@ class PropertiesPanel(QWidget):
         self.current_action_type = ""
         self.current_children = []  # Untuk parallel_group child steps
         self._child_item_widgets = []
+        self._is_modified = False
+        self._building_form = False  # Flag untuk mencegah _mark_modified saat build form
         self.setWindowTitle("Properties")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(4)
 
-        # Title
+        # ==================== TITLE ====================
         title = QLabel("Properties")
         title_font = QFont()
         title_font.setBold(True)
@@ -426,13 +508,71 @@ class PropertiesPanel(QWidget):
         title.setStyleSheet("color: #333; padding: 8px;")
         layout.addWidget(title)
 
-        # No selection label
+        # ==================== ACTION HEADER CARD ====================
+        self.action_header = QFrame()
+        self.action_header.setObjectName("actionHeader")
+        self.action_header.setStyleSheet("""
+            #actionHeader {
+                background: #F8FAFC;
+                border: 1px solid #E2E8F0;
+                border-radius: 8px;
+                margin: 0 4px;
+            }
+        """)
+        header_layout = QVBoxLayout(self.action_header)
+        header_layout.setContentsMargins(12, 10, 12, 10)
+        header_layout.setSpacing(4)
+
+        # Row: icon + type + step_id
+        header_top = QHBoxLayout()
+        header_top.setSpacing(8)
+
+        self.header_icon = QLabel("🔹")
+        self.header_icon.setStyleSheet("font-size: 20px;")
+        header_top.addWidget(self.header_icon)
+
+        self.header_type = QLabel("-")
+        type_font = QFont()
+        type_font.setBold(True)
+        type_font.setPointSize(12)
+        self.header_type.setFont(type_font)
+        self.header_type.setStyleSheet("color: #1E293B;")
+        header_top.addWidget(self.header_type)
+
+        header_top.addStretch()
+
+        self.header_step_id = QLabel("")
+        self.header_step_id.setStyleSheet("""
+            color: #94A3B8; font-size: 8px;
+            background: #F1F5F9; padding: 2px 6px; border-radius: 4px;
+        """)
+        header_top.addWidget(self.header_step_id)
+
+        header_layout.addLayout(header_top)
+
+        # Description
+        self.header_desc = QLabel("")
+        self.header_desc.setWordWrap(True)
+        self.header_desc.setStyleSheet("color: #64748B; font-size: 10px;")
+        header_layout.addWidget(self.header_desc)
+
+        # Modified indicator
+        self.modified_label = QLabel("")
+        self.modified_label.setStyleSheet("""
+            color: #F59E0B; font-weight: bold; font-size: 9px;
+        """)
+        header_layout.addWidget(self.modified_label)
+
+        self.action_header.hide()
+        layout.addWidget(self.action_header)
+
+        # ==================== NO SELECTION ====================
         self.no_selection_label = QLabel("Select a node to edit its properties")
         self.no_selection_label.setAlignment(Qt.AlignCenter)
         self.no_selection_label.setStyleSheet("color: #999; padding: 20px;")
         layout.addWidget(self.no_selection_label)
 
-        # Scroll area for form
+        # ==================== SCROLL AREA ====================
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -444,32 +584,63 @@ class PropertiesPanel(QWidget):
 
         scroll.setWidget(self.form_widget)
         self.form_widget.hide()
-        layout.addWidget(scroll)
+        layout.addWidget(scroll, 1)
+
+        # ==================== BOTTOM BUTTONS ====================
+        bottom_buttons = QHBoxLayout()
+        bottom_buttons.setSpacing(4)
+
+        # Reset button
+        self.reset_btn = QPushButton("↺ Reset")
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                background: #F1F5F9; color: #475569;
+                border: 1px solid #E2E8F0; border-radius: 4px;
+                padding: 6px 10px; font-size: 10px;
+            }
+            QPushButton:hover { background: #E2E8F0; }
+            QPushButton:disabled { background: #F8FAFC; color: #CBD5E1; }
+        """)
+        self.reset_btn.setToolTip("Reset ke default params")
+        self.reset_btn.clicked.connect(self._reset_params)
+        bottom_buttons.addWidget(self.reset_btn)
 
         # Save button
-        self.save_btn = QPushButton("Save")
+        self.save_btn = QPushButton("💾 Save")
         self.save_btn.setStyleSheet("""
             QPushButton {
-                background: #4CAF50; color: white; padding: 8px;
-                border-radius: 4px; font-weight: bold;
+                background: #4CAF50; color: white; padding: 6px 10px;
+                border-radius: 4px; font-weight: bold; font-size: 10px;
             }
             QPushButton:hover { background: #45a049; }
             QPushButton:disabled { background: #ccc; }
         """)
         self.save_btn.clicked.connect(lambda: self.save_requested.emit())
-        layout.addWidget(self.save_btn)
+        bottom_buttons.addWidget(self.save_btn, 1)
+
+        layout.addLayout(bottom_buttons)
+
+        # Disable tombol sampai ada node yang dipilih
+        self.save_btn.setEnabled(False)
+        self.reset_btn.setEnabled(False)
+
+    # ==================== PUBLIC API ====================
 
     def show_action_properties(self, step_id: str, params: dict, action_type: str = "",
                                children: list = None):
-        """Tampilkan form untuk mengedit parameter action, termasuk children untuk parallel_group."""
+        """Tampilkan form untuk mengedit parameter action."""
         self.current_step_id = step_id
         self.current_params = dict(params) if params is not None else {}
         self.current_action_type = action_type or self.current_params.get("type", "")
         self.current_children = children or []
+        self._is_modified = False
 
         self.no_selection_label.hide()
         self.form_widget.show()
         self.form_widget.update()
+
+        # Update action header
+        self._update_action_header()
 
         # Clear form
         while self.form_layout.count():
@@ -481,6 +652,9 @@ class PropertiesPanel(QWidget):
         base_type = self.current_action_type or self.current_params.get("type", "")
         if not base_type:
             base_type = "click"
+
+        # Set flag building form agar _mark_modified tidak terpicu saat build
+        self._building_form = True
         self._rebuild_form_for_type(base_type)
 
         # Override with actual values from params
@@ -488,7 +662,74 @@ class PropertiesPanel(QWidget):
             if key != "type":
                 self.current_params[key] = value
 
+        self._building_form = False
+        self.modified_label.setText("")
+        self.save_btn.setEnabled(False)
+        self.reset_btn.setEnabled(False)
+
         self.form_widget.updateGeometry()
+
+    def _update_action_header(self):
+        """Update action header card."""
+        action_type = self.current_action_type or "default"
+        color = ACTION_COLORS.get(action_type, ACTION_COLORS["default"])
+        icon = ACTION_ICONS.get(action_type, "🔹")
+        desc = ACTION_DESCRIPTIONS.get(action_type, "")
+
+        self.header_icon.setText(icon)
+        self.header_type.setText(action_type.replace("_", " ").title())
+        self.header_type.setStyleSheet(f"color: {color}; font-weight: bold; font-size: 12px;")
+        self.header_desc.setText(desc)
+        self.header_step_id.setText(f"ID: {self.current_step_id}")
+        self.modified_label.setText("")
+
+        self.action_header.show()
+
+    def _mark_modified(self):
+        """Tandai panel sebagai modified."""
+        self._is_modified = True
+        self.modified_label.setText("● Unsaved changes")
+        self.save_btn.setEnabled(True)
+        self.reset_btn.setEnabled(True)
+
+    def _reset_params(self):
+        """Reset params ke default dari action registry."""
+        from backend.core.action_registry import ActionRegistry
+        from backend.actions.click_action import ClickAction
+        from backend.actions.input_text_action import InputTextAction
+        from backend.actions.input_date_action import InputDateAction
+        from backend.actions.wait_action import WaitAction
+        from backend.actions.select_dropdown_action import SelectDropdownAction
+        from backend.actions.radio_select_action import RadioSelectAction
+        from backend.actions.upload_file_action import UploadFileAction
+        from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.loop_action import LoopAction
+        from backend.actions.if_else_action import IfElseAction
+        from backend.actions.parallel_group_action import ParallelGroupAction
+        from backend.actions.select_action import SelectAction
+        from backend.actions.select2_action import Select2Action
+        from backend.actions.navigate_action import NavigateAction
+        registry = ActionRegistry()
+        registry.register(ClickAction())
+        registry.register(InputTextAction())
+        registry.register(InputDateAction())
+        registry.register(WaitAction())
+        registry.register(SelectDropdownAction())
+        registry.register(RadioSelectAction())
+        registry.register(UploadFileAction())
+        registry.register(HttpSubmitAction())
+        registry.register(LoopAction())
+        registry.register(IfElseAction())
+        registry.register(ParallelGroupAction())
+        registry.register(SelectAction())
+        registry.register(Select2Action())
+        registry.register(NavigateAction())
+        action = registry.get(self.current_action_type)
+        if action:
+            self.current_params = action.default_params.copy()
+            self.params_changed.emit(self.current_step_id, self.current_params)
+            self._rebuild_form_for_type(self.current_action_type)
+            self._mark_modified()
 
     def _on_type_change(self, new_type: str):
         """Handle perubahan tipe action."""
@@ -499,6 +740,8 @@ class PropertiesPanel(QWidget):
 
         self.type_changed.emit(self.current_step_id, new_type)
         self._rebuild_form_for_type(new_type)
+        self._update_action_header()
+        self._mark_modified()
 
     def _rebuild_form_for_type(self, action_type: str):
         """Rebuild form dengan field yang sesuai untuk action type."""
@@ -618,14 +861,14 @@ class PropertiesPanel(QWidget):
                 sep.setStyleSheet("background: #e2e8f0; max-height: 1px; margin: 8px 0;")
                 self.form_layout.addRow("", sep)
 
-                children_header = QLabel("  Child Steps (Sequential)")
+                children_header = QLabel("  🔄 Child Steps (Sequential)")
                 children_header.setStyleSheet("""
                     color: #FF5722; font-weight: bold; font-size: 11px;
                     padding: 6px 0; border-bottom: 2px solid #FF5722;
                 """)
                 self.form_layout.addRow("", children_header)
 
-                info_label = QLabel(f"  {len(self.current_children)} steps will run sequentially")
+                info_label = QLabel(f"  {len(self.current_children)} steps akan dijalankan berurutan")
                 info_label.setStyleSheet("color: #64748b; font-size: 9px; padding: 2px 0 6px 0;")
                 self.form_layout.addRow("", info_label)
 
@@ -671,7 +914,7 @@ class PropertiesPanel(QWidget):
                 children_layout.addStretch()
                 self.form_layout.addRow("", children_widget)
             else:
-                empty_label = QLabel("  (No child steps)")
+                empty_label = QLabel("  (Belum ada child steps)")
                 empty_label.setStyleSheet("color: #94a3b8; font-size: 9px; padding: 8px;")
                 self.form_layout.addRow("", empty_label)
 
@@ -698,7 +941,7 @@ class PropertiesPanel(QWidget):
             self.form_layout.addRow("", sep)
 
             # Children section header
-            children_header = QLabel("  Child Steps (Concurrent)")
+            children_header = QLabel("  ⚡ Child Steps (Concurrent)")
             children_header.setStyleSheet("""
                 color: #009688; font-weight: bold; font-size: 11px;
                 padding: 6px 0; border-bottom: 2px solid #009688;
@@ -706,7 +949,7 @@ class PropertiesPanel(QWidget):
             self.form_layout.addRow("", children_header)
 
             # Info label
-            info_label = QLabel(f"  {len(self.current_children)} steps will run concurrently")
+            info_label = QLabel(f"  {len(self.current_children)} steps akan dijalankan paralel")
             info_label.setStyleSheet("color: #64748b; font-size: 9px; padding: 2px 0 6px 0;")
             self.form_layout.addRow("", info_label)
 
@@ -719,7 +962,6 @@ class PropertiesPanel(QWidget):
 
                 self._child_item_widgets = []
                 for i, child in enumerate(self.current_children):
-
                     child_step_id = child.get("id", f"child_{i+1}")
                     child_type = child.get("type", "unknown")
                     child_label = child.get("label", child_type)
@@ -756,7 +998,7 @@ class PropertiesPanel(QWidget):
                 children_layout.addStretch()
                 self.form_layout.addRow("", children_widget)
             else:
-                empty_label = QLabel("  (No child steps - add via workflow editor)")
+                empty_label = QLabel("  (Belum ada child steps - tambahkan via workflow editor)")
                 empty_label.setStyleSheet("color: #94a3b8; font-size: 9px; padding: 8px;")
                 self.form_layout.addRow("", empty_label)
 
@@ -764,7 +1006,7 @@ class PropertiesPanel(QWidget):
         self._add_field("label", self.current_params.get("label", ""))
 
     def _add_field(self, key: str, value):
-        """Tambah field ke form."""
+        """Tambah field ke form dengan deskripsi tooltip."""
         if isinstance(value, bool):
             widget = QCheckBox()
             widget.setChecked(value)
@@ -801,6 +1043,15 @@ class PropertiesPanel(QWidget):
 
         # Label
         label = key.replace("_", " ").title()
+
+        # Tooltip deskripsi
+        desc = FIELD_DESCRIPTIONS.get(key, "")
+        if desc:
+            widget.setToolTip(desc)
+            # Tambahkan placeholder untuk QLineEdit
+            if isinstance(widget, QLineEdit):
+                widget.setPlaceholderText(desc)
+
         self.form_layout.addRow(f"{label}:", widget)
 
     def _on_list_param_change(self, key: str, value: str):
@@ -808,11 +1059,15 @@ class PropertiesPanel(QWidget):
         items = [item.strip() for item in value.split(",") if item.strip()]
         self.current_params[key] = items
         self.params_changed.emit(self.current_step_id, self.current_params)
+        if not self._building_form:
+            self._mark_modified()
 
     def _on_param_change(self, key: str, value):
         """Handle perubahan parameter."""
         self.current_params[key] = value
         self.params_changed.emit(self.current_step_id, self.current_params)
+        if not self._building_form:
+            self._mark_modified()
 
     def add_child_step(self):
         """Tambah child step baru ke loop atau parallel_group."""
@@ -857,6 +1112,7 @@ class PropertiesPanel(QWidget):
         self.current_params["steps"] = self.current_children
         self.params_changed.emit(self.current_step_id, self.current_params)
         self._rebuild_form_for_type(self.current_action_type)
+        self._mark_modified()
 
     def remove_child_step(self, index: int):
         """Hapus child step dari loop atau parallel_group."""
@@ -865,6 +1121,7 @@ class PropertiesPanel(QWidget):
             self.current_params["steps"] = self.current_children
             self.params_changed.emit(self.current_step_id, self.current_params)
             self._rebuild_form_for_type(self.current_action_type)
+            self._mark_modified()
 
     def move_child_up(self, index: int):
         """Pindah child step ke atas."""
@@ -874,6 +1131,7 @@ class PropertiesPanel(QWidget):
             self.current_params["steps"] = self.current_children
             self.params_changed.emit(self.current_step_id, self.current_params)
             self._rebuild_form_for_type(self.current_action_type)
+            self._mark_modified()
 
     def move_child_down(self, index: int):
         """Pindah child step ke bawah."""
@@ -883,6 +1141,7 @@ class PropertiesPanel(QWidget):
             self.current_params["steps"] = self.current_children
             self.params_changed.emit(self.current_step_id, self.current_params)
             self._rebuild_form_for_type(self.current_action_type)
+            self._mark_modified()
 
     def edit_child_step(self, index: int):
         """Edit child step - masukkan inline edit mode di ChildStepItem."""
@@ -897,6 +1156,7 @@ class PropertiesPanel(QWidget):
             self.current_children[index] = child_data
             self.current_params["steps"] = self.current_children
             self.params_changed.emit(self.current_step_id, self.current_params)
+            self._mark_modified()
 
     def clear(self):
         """Bersihkan form."""
@@ -905,5 +1165,9 @@ class PropertiesPanel(QWidget):
         self.current_action_type = ""
         self.current_children = []
         self._child_item_widgets = []
+        self._is_modified = False
         self.no_selection_label.show()
         self.form_widget.hide()
+        self.action_header.hide()
+        self.save_btn.setEnabled(False)
+        self.reset_btn.setEnabled(False)
