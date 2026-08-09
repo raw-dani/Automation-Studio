@@ -16,6 +16,8 @@ from backend.actions.base_action import (
 )
 from backend.core.action_registry import ActionRegistry
 from backend.core.workflow_parser import Workflow, WorkflowStep, WorkflowParser
+from backend.license.license_manager import LicenseManager
+from backend.license.usage_tracker import UsageTracker
 
 
 class ExecutionEngine:
@@ -37,6 +39,8 @@ class ExecutionEngine:
         self._page = None
         self._on_progress: Optional[Callable] = None
         self._on_log: Optional[Callable] = None
+        self.license_manager: Optional[LicenseManager] = None
+        self.usage_tracker: Optional[UsageTracker] = None
     
     @property
     def is_running(self) -> bool:
@@ -57,6 +61,11 @@ class ExecutionEngine:
     def set_log_callback(self, callback: Callable) -> None:
         """Set callback untuk log update."""
         self._on_log = callback
+
+    def set_license_manager(self, license_manager: LicenseManager, usage_tracker: UsageTracker):
+        """Set license manager untuk batasan free mode."""
+        self.license_manager = license_manager
+        self.usage_tracker = usage_tracker
     
     def _log(self, level: str, message: str, data: dict = None) -> None:
         """Internal logging."""
@@ -444,6 +453,31 @@ class ExecutionEngine:
             loop_body = workflow.steps[loop_start_index + 1:]
         
         total_iterations = len(data_rows)
+        
+        # ==================== LICENSE ENFORCEMENT ====================
+        # Cek kuota untuk free mode
+        processed_count = 0
+        is_licensed = False
+        remaining_quota = -1  # -1 = unlimited
+        
+        if self.license_manager:
+            is_licensed = self.license_manager.is_licensed()
+        
+        if not is_licensed and self.usage_tracker:
+            remaining_quota = self.usage_tracker.get_remaining_quota()
+            if remaining_quota == 0:
+                self._log("WARNING", "Free mode: Kuota harian 10 data telah tercapai. Eksekusi dibatalkan.")
+                return {
+                    "next_index": len(workflow.steps),
+                    "quota_exceeded": True,
+                    "message": "Kuota harian 10 data telah tercapai. Aktifkan lisensi untuk pemrosesan tanpa batas."
+                }
+            elif remaining_quota > 0:
+                # Batasi jumlah data yang akan diproses
+                total_iterations = min(total_iterations, remaining_quota)
+                self._log("INFO", f"Free mode: Membatasi {total_iterations} dari {len(data_rows)} data (sisa kuota: {remaining_quota})")
+        # ==================== END LICENSE ENFORCEMENT ====================
+        
         self._log("INFO", f"Loop {step.id}: {total_iterations} rows from data source")
         
         for iteration, row in enumerate(data_rows):
@@ -455,6 +489,10 @@ class ExecutionEngine:
                 await asyncio.sleep(0.5)
             
             if not self._is_running:
+                break
+            
+            # Stop jika sudah mencapai batas kuota
+            if processed_count >= total_iterations:
                 break
             
             context.current_data = row.data
@@ -509,6 +547,14 @@ class ExecutionEngine:
                     elif body_step.on_error == "skip":
                         self._log("WARNING", f"Skipping error at step {body_step.id}")
                         continue
+            
+            processed_count += 1
+        
+        # ==================== UPDATE USAGE TRACKER ====================
+        if not is_licensed and self.usage_tracker and processed_count > 0:
+            self.usage_tracker.increment_usage(processed_count)
+            self._log("INFO", f"Free mode: Usage updated. {processed_count} data processed today.")
+        # ==================== END UPDATE USAGE TRACKER ====================
         
         # Jika tidak ada children, semua step setelah loop sudah dieksekusi
         if not step.children:

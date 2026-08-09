@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QProgressBar, QGroupBox, QLineEdit, QCheckBox, QSlider,
     QComboBox, QListWidget, QListWidgetItem, QScrollArea,
-    QFrame, QSplitter, QSizePolicy, QAbstractItemView,
+    QFrame, QSplitter, QSizePolicy, QAbstractItemView, QMessageBox,
 )
 from PySide6.QtCore import Qt, Signal, QThread, QTimer, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QPixmap, QPainter
@@ -105,6 +105,8 @@ class ExecutionPanel(QWidget):
         self.engine = engine
         self.current_workflow: Optional[Workflow] = None
         self.url_label = ""  # URL dari workflow (untuk sinkronisasi)
+        self.license_manager = None
+        self.usage_tracker = None
         self._step_items: dict[str, StepListItem] = {}  # step_id -> StepListItem
         self._execution_count = 0
         self._step_by_step_mode = False
@@ -496,6 +498,30 @@ class ExecutionPanel(QWidget):
 
     # ==================== PUBLIC METHODS ====================
 
+    def set_license_manager(self, license_manager, usage_tracker):
+        """Set license manager untuk cek kuota."""
+        self.license_manager = license_manager
+        self.usage_tracker = usage_tracker
+        self._update_license_info()
+
+    def _update_license_info(self):
+        """Update license info di toolbar."""
+        if not hasattr(self, 'license_info_label'):
+            return
+
+        if not self.license_manager or not self.usage_tracker:
+            return
+
+        if self.license_manager.is_licensed():
+            self.license_info_label.setText("🔒 Licensed")
+            self.license_info_label.setStyleSheet("color: #28a745; font-weight: bold; font-size: 11px;")
+            self.license_info_label.setToolTip("Lisensi aktif - tanpa batasan")
+        else:
+            remaining = self.usage_tracker.get_remaining_quota()
+            self.license_info_label.setText(f"🔓 Free ({remaining})")
+            self.license_info_label.setStyleSheet("color: #ffc107; font-weight: bold; font-size: 11px;")
+            self.license_info_label.setToolTip(f"Mode Free: {remaining} data tersisa hari ini")
+
     def set_workflow(self, workflow: Optional[Workflow]):
         """Set workflow yang akan dijalankan dan populate step list."""
         self.current_workflow = workflow
@@ -585,6 +611,19 @@ class ExecutionPanel(QWidget):
         if not self.current_workflow:
             self.status_label.setText("No workflow loaded")
             return
+
+        # Cek kuota untuk free mode
+        if self.license_manager and self.usage_tracker:
+            if not self.license_manager.is_licensed():
+                if self.usage_tracker.is_quota_exceeded():
+                    QMessageBox.warning(
+                        self,
+                        "Free Mode Limit",
+                        "Kuota harian 10 data telah tercapai.\n"
+                        "Aktifkan lisensi untuk pemrosesan tanpa batas.\n\n"
+                        "Menu: License → Activate License"
+                    )
+                    return
 
         # Reset step list statuses
         for item in self._step_items.values():
@@ -941,6 +980,9 @@ class ExecutionPanel(QWidget):
         failed_count = result.get("failed_count", 0)
         total = result.get("total_steps", 0)
         duration = result.get("duration_seconds", 0)
+
+        # Update license status after execution
+        self._update_license_info()
 
         # Update step list for any remaining steps
         for step_result in result.get("results", []):

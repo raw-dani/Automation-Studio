@@ -42,6 +42,8 @@ from backend.actions.select2_action import Select2Action
 from backend.actions.parallel_group_action import ParallelGroupAction
 from backend.actions.radio_select_action import RadioSelectAction
 from backend.actions.http_submit_action import HttpSubmitAction
+from backend.license.license_manager import LicenseManager
+from backend.license.usage_tracker import UsageTracker
 
 
 RECENT_FILES_MAX = 5
@@ -114,6 +116,12 @@ class MainWindow(QMainWindow):
         self.engine = ExecutionEngine(self.action_registry, self.config)
         self.parser = WorkflowParser()
 
+        # Setup license system
+        license_config = self.config.get("license", {})
+        self.license_manager = LicenseManager(license_config)
+        usage_config = license_config.get("free_mode", {})
+        self.usage_tracker = UsageTracker(usage_config.get("daily_data_limit", 10))
+
         # Load settings
         self._settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self._load_settings()
@@ -132,6 +140,10 @@ class MainWindow(QMainWindow):
 
         # Restore window geometry
         self._restore_geometry()
+
+        # Auto-verify license on startup
+        self.license_manager.auto_verify_on_startup()
+        self._update_license_status()
 
     def _create_action_registry(self) -> ActionRegistry:
         """Buat dan daftarkan semua action."""
@@ -300,6 +312,21 @@ class MainWindow(QMainWindow):
         select_all_action.triggered.connect(self.workflow_editor.select_all)
         edit_menu.addAction(select_all_action)
 
+        # ==================== LICENSE MENU ====================
+        license_menu = menubar.addMenu("&License")
+
+        license_status_action = QAction("License Status", self)
+        license_status_action.triggered.connect(self._show_license_status)
+        license_menu.addAction(license_status_action)
+
+        license_activate_action = QAction("Activate License", self)
+        license_activate_action.triggered.connect(self._activate_license)
+        license_menu.addAction(license_activate_action)
+
+        license_deactivate_action = QAction("Deactivate License", self)
+        license_deactivate_action.triggered.connect(self._deactivate_license)
+        license_menu.addAction(license_deactivate_action)
+
         # ==================== VIEW MENU ====================
         view_menu = menubar.addMenu("&View")
 
@@ -450,6 +477,12 @@ class MainWindow(QMainWindow):
         self.modified_label.setStyleSheet("color: #FF9800; font-weight: bold; padding: 0 8px;")
         self.statusBar().addPermanentWidget(self.modified_label)
 
+        # License status indicator
+        self.license_label = QLabel("🔓 Free")
+        self.license_label.setStyleSheet("color: #ffc107; font-weight: bold; padding: 0 8px;")
+        self.license_label.setToolTip("License status")
+        self.statusBar().addPermanentWidget(self.license_label)
+
         # Workflow info (right)
         self.workflow_info_label = QLabel("No workflow loaded")
         self.workflow_info_label.setStyleSheet("color: #666; padding: 0 8px;")
@@ -504,6 +537,10 @@ class MainWindow(QMainWindow):
             self._reload_current_workflow
         )
 
+        # License system integration
+        self.execution_panel.set_license_manager(self.license_manager, self.usage_tracker)
+        self.engine.set_license_manager(self.license_manager, self.usage_tracker)
+
         # Properties panel -> Save
         self.properties_panel.save_requested.connect(
             self._on_properties_save_requested
@@ -555,6 +592,18 @@ class MainWindow(QMainWindow):
         name = self.current_workflow.name if self.current_workflow else "New Workflow"
         modified = " *" if self._modified else ""
         self.setWindowTitle(f"Automation Studio - {name}{modified}")
+
+    def _update_license_status(self):
+        """Update license status di status bar."""
+        if self.license_manager.is_licensed():
+            self.license_label.setText("🔒 Licensed")
+            self.license_label.setStyleSheet("color: #28a745; font-weight: bold; padding: 0 8px;")
+            self.license_label.setToolTip("Lisensi aktif - tanpa batasan")
+        else:
+            remaining = self.usage_tracker.get_remaining_quota()
+            self.license_label.setText(f"🔓 Free ({remaining}/10)")
+            self.license_label.setStyleSheet("color: #ffc107; font-weight: bold; padding: 0 8px;")
+            self.license_label.setToolTip(f"Mode Free: {remaining} data tersisa hari ini")
 
     def _on_workflow_changed(self):
         """Sync editor state ke execution panel."""
@@ -1110,6 +1159,37 @@ class MainWindow(QMainWindow):
             "- OpenCV + Tesseract OCR\n\n"
             "© 2026 Automation Studio"
         )
+
+    # ==================== LICENSE METHODS ====================
+
+    def _show_license_status(self):
+        """Tampilkan dialog status lisensi."""
+        from frontend.ui.license_dialog import LicenseDialog
+        dialog = LicenseDialog(self.license_manager, self.usage_tracker, self)
+        dialog.exec()
+        self._update_license_status()
+
+    def _activate_license(self):
+        """Buka dialog aktivasi lisensi."""
+        from frontend.ui.license_dialog import LicenseDialog
+        dialog = LicenseDialog(self.license_manager, self.usage_tracker, self)
+        dialog.license_activated.connect(self._on_license_activated)
+        dialog.exec()
+        self._update_license_status()
+
+    def _deactivate_license(self):
+        """Deaktivasi lisensi."""
+        result = self.license_manager.deactivate()
+        if result.get("success"):
+            QMessageBox.information(self, "Success", result.get("message", "License deactivated"))
+            self._update_license_status()
+        else:
+            QMessageBox.warning(self, "Warning", result.get("message", "Deactivation failed"))
+
+    def _on_license_activated(self):
+        """Handle license activated."""
+        self._update_license_status()
+        QMessageBox.information(self, "Success", "Lisensi berhasil diaktifkan!")
 
     # ==================== CLOSE EVENT ====================
 
