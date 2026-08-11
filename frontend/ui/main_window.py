@@ -1157,7 +1157,11 @@ class MainWindow(QMainWindow):
             "- Python + Playwright\n"
             "- PySide6 (Qt for Python)\n"
             "- OpenCV + Tesseract OCR\n\n"
-            "© 2026 Automation Studio"
+            "© 2026 Automation Studio\n\n"
+            "Developer: Rohmat Ali Wardani\n"
+            "Email: rohmataliwardani@gmail.com\n"
+            "WhatsApp: 0899-342-6848\n"
+            "LinkedIn: https://www.linkedin.com/in/rohmat-ali-wardani/"
         )
 
     # ==================== LICENSE METHODS ====================
