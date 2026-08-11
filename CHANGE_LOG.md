@@ -117,3 +117,53 @@
 - Semua perubahan **backward compatible** — workflow lama tanpa `parallel_group` tetap berjalan normal
 - Mode `turbo` bersifat opsional, user bisa pilih `normal` jika ingin stabilitas tinggi
 - Untuk 1000 data, disarankan menggunakan mode `turbo` + `parallel_group`
+
+---
+
+## Integrasi Lisensi WHMCS — **RELEASE**
+
+### [7] License System Integration — **RELEASE** ✅
+**Deskripsi:** Integrasi sistem lisensi WHMCS `superpos_license` dengan mode Free vs Licensed, hardware binding 1 lisensi = 1 komputer, dan kuota harian 10 data untuk free mode.  
+**File yang diubah:**
+- `backend/license/__init__.py` — Modul lisensi
+- `backend/license/fingerprint.py` — Hardware fingerprint (Windows/MAC/Disk/Hostname)
+- `backend/license/license_manager.py` — Aktivasi, verifikasi, deaktivasi, cache 24 jam, offline mode
+- `backend/license/usage_tracker.py` — Tracking penggunaan harian, auto reset
+- `config.yaml` — Konfigurasi `license.server_url`, `api_key`, `free_mode.daily_data_limit`
+- `frontend/ui/license_dialog.py` — Dialog aktivasi/deaktivasi, status free/licensed
+- `frontend/ui/main_window.py` — Menu License, status bar, auto-verify startup
+- `frontend/ui/execution_panel.py` — Cek kuota sebelum run, update status setelah eksekusi
+- `backend/core/engine.py` — Enforcement batasan data di `_execute_data_source_loop()`, update usage tracker
+
+**Status:** ✅ Selesai  
+**Dampak:** Free mode tetap berjalan sepenuhnya dengan batasan 10 data/hari; Licensed mode tanpa batasan
+
+**Fitur:**
+- Hardware fingerprint yang kuat dan konsisten
+- Aktivasi lisensi dengan binding ke 1 komputer
+- Verifikasi berkala setiap 24 jam
+- Mode offline tetap berjalan dengan cache valid
+- UI: License menu, status bar `🔒 Licensed` / `🔓 Free (n/10)`, dialog manajemen lisensi
+- Enforcement batasan data di engine + update kuota otomatis setelah eksekusi
+
+---
+
+## Auto-Generate Workflow dari Data Excel — **IN PROGRESS**
+
+### [8] Auto Generate Workflow — **IN PROGRESS** 🚧
+**Deskripsi:** Fitur untuk membuat workflow otomatis dari data Excel agar user tidak perlu build workflow manual untuk input data berulang.  
+**File yang diubah:**
+- `frontend/ui/data_source_manager.py` — Tambah tombol `⚡ Auto Generate Workflow` + integrasi builder
+- `frontend/ui/auto_generate_dialog.py` — Dialog konfigurasi mapping kolom Excel -> action step
+- `backend/core/workflow_builder.py` — Builder workflow dari Excel headers + config dialog, terintegrasi dengan `action_registry`
+
+**Status:** 🚧 Dalam pengembangan  
+**Dampak:** Percepat pembuatan workflow form input berulang
+
+**Fitur:**
+- Preview data Excel -> detect kolom
+- Dialog mapping: pilih action type untuk setiap kolom (`input_text`, `click`, `select`, `upload_file`)
+- Generate workflow structure: Navigate -> Loop Data -> Action Steps -> Submit
+- Selector default berbasis nama kolom Excel (`input[name='...']`, `select[name='...']`, dll)
+- Value otomatis menggunakan variable reference `{{data.column_name}}`
+- Load hasil generate langsung ke Workflow Editor + Execution Panel

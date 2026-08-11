@@ -20,3 +20,29 @@
 - [x] `ParallelGroupAction` di-registrasi di `main_window.py`
 - [x] `ParallelGroupAction` di-registrasi di CLI `main.py`
 
+---
+
+# ✅ Todo: Auto-Generate Workflow dari Data Excel - RELEASE
+
+## [1] UI + Dialog (DONE ✅)
+- [x] Tombol `⚡ Auto Generate Workflow` di `frontend/ui/data_source_manager.py`
+- [x] Dialog mapping di `frontend/ui/auto_generate_dialog.py`
+
+## [2] Backend Builder (DONE ✅)
+- [x] `backend/core/workflow_builder.py` — generate workflow dict dari Excel headers + config
+- [x] Integrasi dengan `action_registry` untuk default params yang valid
+
+## [3] Dokumentasi (DONE ✅)
+- [x] `TODO_AUTO_GENERATE_WORKFLOW.md`
+- [x] `CHANGE_LOG.md`
+
+---
+
+# ✅ Distribusi .exe ke Customer
+
+## [1] Build & Packaging (IN PROGRESS 🚧)
+- [x] Update `build_exe.py` hidden imports untuk module baru
+- [x] Tambah `_copy_runtime_files()` agar `config.yaml` + folder `workflows`, `data`, `logs`, `screenshots` ikut disalin
+- [ ] Build ulang `.exe` dan verifikasi struktur `dist\AutomationStudio\`
+- [ ] Validasi file `AutomationStudio.exe`, `_internal`, `config.yaml`, dan folder pendukung ada
+

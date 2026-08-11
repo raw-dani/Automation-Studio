@@ -13,6 +13,19 @@ import shutil
 import argparse
 
 
+def _copy_runtime_files(dist_dir: str):
+    """Salin file/folder pendukung yang dibutuhkan saat runtime."""
+    # Buat folder dasar jika belum ada
+    for folder in ["workflows", "data", "logs", "screenshots"]:
+        os.makedirs(os.path.join(dist_dir, folder), exist_ok=True)
+
+    # Salin config.yaml ke root folder distribusi
+    src_config = "config.yaml"
+    dst_config = os.path.join(dist_dir, "config.yaml")
+    if os.path.exists(src_config):
+        shutil.copy2(src_config, dst_config)
+
+
 def build_gui():
     """Build GUI executable."""
     print("Building Automation Studio GUI...")
@@ -56,6 +69,15 @@ def build_gui():
         "--hidden-import", "backend.detectors.base_detector",
         "--hidden-import", "backend.detectors.ocr_detector",
         "--hidden-import", "backend.detectors.image_detector",
+        "--hidden-import", "backend.license.license_manager",
+        "--hidden-import", "backend.license.usage_tracker",
+        "--hidden-import", "backend.license.fingerprint",
+        "--hidden-import", "backend.core.workflow_builder",
+        "--hidden-import", "backend.actions.navigate_action",
+        "--hidden-import", "backend.actions.select_action",
+        "--hidden-import", "backend.actions.select2_action",
+        "--hidden-import", "backend.actions.http_submit_action",
+        "--hidden-import", "frontend.ui.auto_generate_dialog",
         "--hidden-import", "yaml",
         "--hidden-import", "loguru",
         "--hidden-import", "pandas",
@@ -69,6 +91,9 @@ def build_gui():
     ]
     
     os.system(" ".join(cmd))
+
+    dist_dir = os.path.join("dist", "AutomationStudio")
+    _copy_runtime_files(dist_dir)
     print("\nBuild complete! Executable located at: dist/AutomationStudio/AutomationStudio.exe")
 
 
@@ -95,6 +120,9 @@ def build_cli():
     ]
     
     os.system(" ".join(cmd))
+
+    dist_dir = os.path.join("dist", "AutomationStudio_CLI")
+    _copy_runtime_files(dist_dir)
     print("\nBuild complete! Executable located at: dist/AutomationStudio_CLI/AutomationStudio_CLI.exe")
 
 
@@ -123,6 +151,9 @@ def build_api():
     ]
     
     os.system(" ".join(cmd))
+
+    dist_dir = os.path.join("dist", "AutomationStudio_API")
+    _copy_runtime_files(dist_dir)
     print("\nBuild complete! Executable located at: dist/AutomationStudio_API/AutomationStudio_API.exe")
 
 

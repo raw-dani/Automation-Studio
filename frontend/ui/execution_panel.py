@@ -141,12 +141,17 @@ class ExecutionPanel(QWidget):
         self.workflow_info_label.setStyleSheet("color: #666; font-size: 10px;")
         info_layout.addWidget(self.workflow_info_label)
 
-        # URL input
+        # License info + URL input
         url_row = QHBoxLayout()
+        url_row.addWidget(QLabel("License:"))
+        self.license_info_label = QLabel("🔓 Free")
+        self.license_info_label.setStyleSheet("color: #ffc107; font-weight: bold; font-size: 11px;")
+        url_row.addWidget(self.license_info_label)
+        url_row.addSpacing(12)
         url_row.addWidget(QLabel("URL:"))
         self.url_input = QLineEdit()
         self.url_input.setPlaceholderText("https://example.com/login")
-        url_row.addWidget(self.url_input)
+        url_row.addWidget(self.url_input, 1)
         self.save_url_btn = QPushButton("Save")
         self.save_url_btn.setFixedWidth(50)
         self.save_url_btn.setStyleSheet("""
