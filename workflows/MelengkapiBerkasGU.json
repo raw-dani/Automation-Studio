@@ -5,7 +5,7 @@
   "url": "https://skb.atrbpn.go.id/BerkasSaya#",
   "data_source": {
     "config": {
-      "file_path": "data/51. LAYOUT MELENGKAPI BERKAS GU 51.xlsx",
+      "file_path": "C:/Users/EIKON/Documents/APP/Automation Studio/data/LAYOT MELENGKAPI BERKAS SEKUDUK 1 168 BIDANG.xlsx",
       "sheet": "Sheet1"
     },
     "type": "excel"
@@ -80,7 +80,8 @@
         "timeout": 10000,
         "value": "{{data.ALAMAT}}",
         "wait_after": 100,
-        "wait_before": 50
+        "wait_before": 50,
+        "fallback_to_search": true
       },
       "on_error": "stop",
       "retry": {
@@ -256,7 +257,7 @@
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
-            "wait_after": 0
+            "wait_after": 100
           },
           "on_error": "stop",
           "retry": {
@@ -274,7 +275,7 @@
             "clear_first": true,
             "use_fill": true,
             "wait_before": 0,
-            "wait_after": 0
+            "wait_after": 100
           },
           "on_error": "stop",
           "retry": {
@@ -391,23 +392,6 @@
           }
         },
         {
-          "id": "step_13i",
-          "type": "radio_select",
-          "label": "Pilih Jenis Kelamin",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil",
-            "select_by": "value",
-            "value": "Laki-laki",
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
           "id": "step_13j",
           "type": "input_text",
           "label": "Input Golongan Darah",
@@ -507,8 +491,10 @@
           "tipebuktiid": "1",
           "tipepemilikid": "1"
         },
+        "wait_before": 500,
         "wait_after": 500,
-        "timeout": 30000
+        "timeout": 30000,
+        "fallback_to_click": true
       },
       "on_error": "stop",
       "retry": {
@@ -556,5 +542,5 @@
     "log_level": "INFO"
   },
   "created_at": "2026-07-28T20:34:38.551675",
-  "updated_at": "2026-08-03T22:00:29.180951"
+  "updated_at": "2026-08-18T22:28:27.806906"
 }

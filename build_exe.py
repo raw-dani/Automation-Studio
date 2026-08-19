@@ -10,6 +10,7 @@ Usage:
 import os
 import sys
 import shutil
+import subprocess
 import argparse
 
 
@@ -26,26 +27,43 @@ def _copy_runtime_files(dist_dir: str):
         shutil.copy2(src_config, dst_config)
 
 
+def _safe_rmtree(path: str, retries: int = 5, delay: float = 2.0):
+    import time
+    for i in range(retries):
+        try:
+            if os.path.exists(path):
+                shutil.rmtree(path, ignore_errors=True)
+            return
+        except PermissionError:
+            if i < retries - 1:
+                time.sleep(delay)
+            else:
+                print(f"Warning: Could not remove {path}. Some files may be locked. Continuing build...")
+
+
 def build_gui():
     """Build GUI executable."""
     print("Building Automation Studio GUI...")
     
     # Clean previous build
     for dir_name in ["build", "dist"]:
-        if os.path.exists(dir_name):
-            shutil.rmtree(dir_name)
+        _safe_rmtree(dir_name)
     
     # PyInstaller command
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = [
         "pyinstaller",
+        "-y",
         "--name", "AutomationStudio",
+        "--distpath", "dist_build",
+        "--workpath", "build_build",
         "--windowed",  # No console window
         "--icon", "NONE",  # TODO: Add icon file
-        "--add-data", "config.yaml;.",
-        "--add-data", "workflows;workflows",
-        "--add-data", "data;data",
-        "--add-data", "logs;logs",
-        "--add-data", "screenshots;screenshots",
+        "--add-data", f"{os.path.join(base_dir, 'config.yaml')};.",
+        "--add-data", f"{os.path.join(base_dir, 'workflows')};workflows",
+        "--add-data", f"{os.path.join(base_dir, 'data')};data",
+        "--add-data", f"{os.path.join(base_dir, 'logs')};logs",
+        "--add-data", f"{os.path.join(base_dir, 'screenshots')};screenshots",
         "--hidden-import", "backend.core.engine",
         "--hidden-import", "backend.core.workflow_parser",
         "--hidden-import", "backend.core.action_registry",
@@ -86,15 +104,30 @@ def build_gui():
         "--hidden-import", "pytesseract",
         "--hidden-import", "PIL",
         "--hidden-import", "pyautogui",
+        "--hidden-import", "playwright",
+        "--hidden-import", "requests",
+        "--hidden-import", "numpy",
+        "--hidden-import", "httpx",
+        "--hidden-import", "sqlalchemy",
+        "--hidden-import", "uvicorn",
+        "--hidden-import", "fastapi",
+        "--hidden-import", "pydantic",
+        "--hidden-import", "PIL.Image",
+        "--hidden-import", "PIL.ImageQt",
+        "--hidden-import", "winreg",
+        "--hidden-import", "backend.actions.input_date_action",
+        "--hidden-import", "backend.actions.radio_select_action",
+        "--hidden-import", "backend.actions.parallel_group_action",
+        "--hidden-import", "backend.api.schemas",
         "--collect-all", "PySide6",
         "frontend/main.py",
     ]
     
-    os.system(" ".join(cmd))
+    subprocess.run(cmd, check=True)
 
-    dist_dir = os.path.join("dist", "AutomationStudio")
+    dist_dir = os.path.join("dist_build", "AutomationStudio")
     _copy_runtime_files(dist_dir)
-    print("\nBuild complete! Executable located at: dist/AutomationStudio/AutomationStudio.exe")
+    print("\nBuild complete! Executable located at: dist_build/AutomationStudio/AutomationStudio.exe")
 
 
 def build_cli():
@@ -102,28 +135,39 @@ def build_cli():
     print("Building Automation Studio CLI...")
     
     for dir_name in ["build", "dist"]:
-        if os.path.exists(dir_name):
-            shutil.rmtree(dir_name)
+        _safe_rmtree(dir_name)
     
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = [
         "pyinstaller",
+        "-y",
         "--name", "AutomationStudio_CLI",
+        "--distpath", "dist_build_cli",
+        "--workpath", "build_build_cli",
         "--console",
-        "--add-data", "config.yaml;.",
-        "--add-data", "workflows;workflows",
-        "--add-data", "data;data",
-        "--add-data", "logs;logs",
-        "--add-data", "screenshots;screenshots",
+        "--add-data", f"{os.path.join(base_dir, 'config.yaml')};.",
+        "--add-data", f"{os.path.join(base_dir, 'workflows')};workflows",
+        "--add-data", f"{os.path.join(base_dir, 'data')};data",
+        "--add-data", f"{os.path.join(base_dir, 'logs')};logs",
+        "--add-data", f"{os.path.join(base_dir, 'screenshots')};screenshots",
         "--hidden-import", "yaml",
         "--hidden-import", "loguru",
+        "--hidden-import", "playwright",
+        "--hidden-import", "requests",
+        "--hidden-import", "numpy",
+        "--hidden-import", "httpx",
+        "--hidden-import", "sqlalchemy",
+        "--hidden-import", "backend.actions.input_date_action",
+        "--hidden-import", "backend.actions.radio_select_action",
+        "--hidden-import", "backend.actions.parallel_group_action",
         "main.py",
     ]
     
-    os.system(" ".join(cmd))
+    subprocess.run(cmd, check=True)
 
-    dist_dir = os.path.join("dist", "AutomationStudio_CLI")
+    dist_dir = os.path.join("dist_build_cli", "AutomationStudio_CLI")
     _copy_runtime_files(dist_dir)
-    print("\nBuild complete! Executable located at: dist/AutomationStudio_CLI/AutomationStudio_CLI.exe")
+    print("\nBuild complete! Executable located at: dist_build_cli/AutomationStudio_CLI/AutomationStudio_CLI.exe")
 
 
 def build_api():
@@ -131,30 +175,42 @@ def build_api():
     print("Building Automation Studio API Server...")
     
     for dir_name in ["build", "dist"]:
-        if os.path.exists(dir_name):
-            shutil.rmtree(dir_name)
+        _safe_rmtree(dir_name)
     
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = [
         "pyinstaller",
+        "-y",
         "--name", "AutomationStudio_API",
+        "--distpath", "dist_build_api",
+        "--workpath", "build_build_api",
         "--console",
-        "--add-data", "config.yaml;.",
-        "--add-data", "workflows;workflows",
-        "--add-data", "data;data",
-        "--add-data", "logs;logs",
-        "--add-data", "screenshots;screenshots",
+        "--add-data", f"{os.path.join(base_dir, 'config.yaml')};.",
+        "--add-data", f"{os.path.join(base_dir, 'workflows')};workflows",
+        "--add-data", f"{os.path.join(base_dir, 'data')};data",
+        "--add-data", f"{os.path.join(base_dir, 'logs')};logs",
+        "--add-data", f"{os.path.join(base_dir, 'screenshots')};screenshots",
         "--hidden-import", "yaml",
         "--hidden-import", "loguru",
         "--hidden-import", "uvicorn",
         "--hidden-import", "fastapi",
+        "--hidden-import", "playwright",
+        "--hidden-import", "requests",
+        "--hidden-import", "numpy",
+        "--hidden-import", "httpx",
+        "--hidden-import", "sqlalchemy",
+        "--hidden-import", "pydantic",
+        "--hidden-import", "PIL.Image",
+        "--hidden-import", "PIL.ImageQt",
+        "--hidden-import", "winreg",
         "backend/api/routes.py",
     ]
     
-    os.system(" ".join(cmd))
+    subprocess.run(cmd, check=True)
 
-    dist_dir = os.path.join("dist", "AutomationStudio_API")
+    dist_dir = os.path.join("dist_build_api", "AutomationStudio_API")
     _copy_runtime_files(dist_dir)
-    print("\nBuild complete! Executable located at: dist/AutomationStudio_API/AutomationStudio_API.exe")
+    print("\nBuild complete! Executable located at: dist_build_api/AutomationStudio_API/AutomationStudio_API.exe")
 
 
 def main():

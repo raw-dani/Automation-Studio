@@ -27,6 +27,7 @@ class Select2Action(BaseAction):
             "clear_first": True,
             "skip_if_empty": False,  # Skip step jika value kosong
             "add_new": False,        # Jika true, klik tombol add new jika opsi tidak ditemukan
+            "fallback_to_search": False,  # Jika true, coba gunakan search field langsung jika gagal klik trigger
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -70,6 +71,20 @@ class Select2Action(BaseAction):
         if wait_before > 0:
             await asyncio.sleep(wait_before / 1000)
 
+        result = await self._execute_select2(page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after)
+        if result.status == ActionStatus.SUCCESS:
+            return result
+
+        if params.get("fallback_to_search"):
+            fallback = await self._try_search_fallback(page, selector, search_selector, value, timeout, clear_first, wait_after)
+            if fallback.status == ActionStatus.SUCCESS:
+                return fallback
+            return result
+
+        return result
+
+    async def _execute_select2(self, page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after):
+        """Logic utama Select2: klik trigger, buka dropdown, search, pilih opsi."""
         try:
             adjacent_trigger = f"{selector} + .select2-container .select2-selection--single, {selector} + .select2-container"
             container_id = selector.replace("#", "select2-") + "-container"
@@ -167,7 +182,59 @@ class Select2Action(BaseAction):
             return f"xpath={partial_xpath}"
 
         return None
-    
+
+    async def _try_search_fallback(self, page, selector, search_selector, value, timeout, clear_first, wait_after):
+        """Fallback: coba gunakan search field Select2 langsung tanpa klik trigger."""
+        try:
+            search_input_selector = search_selector or ".select2-search__field, .select2-container--open .select2-search__field, .select2-dropdown .select2-search__field"
+            target_input = search_selector or search_input_selector
+
+            search_count = await page.locator(target_input).count()
+            if search_count == 0:
+                return ActionResult(
+                    status=ActionStatus.FAILED,
+                    message=f"Fallback gagal: search field Select2 tidak ditemukan.",
+                    error="Search field not found",
+                )
+
+            input_field = page.locator(target_input).first
+            if not await input_field.is_visible():
+                return ActionResult(
+                    status=ActionStatus.FAILED,
+                    message=f"Fallback gagal: search field Select2 tidak visible.",
+                    error="Search field not visible",
+                )
+
+            if clear_first:
+                await input_field.fill("")
+                await asyncio.sleep(0.2)
+
+            await input_field.type(value, delay=80)
+            await asyncio.sleep(0.6)
+
+            option_selector = await self._find_option(page, value, timeout)
+            if option_selector:
+                await page.locator(option_selector).first.click(timeout=timeout)
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
+                return ActionResult(
+                    status=ActionStatus.SUCCESS,
+                    message=f"Berhasil pilih Select2 via search fallback '{selector}' dengan nilai: {value}",
+                    data={"selector": selector, "search_selector": target_input, "value": value, "fallback": True},
+                )
+
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message=f"Opsi '{value}' tidak ditemukan via search fallback.",
+                error=f"Option not found: {value}",
+            )
+        except Exception as e:
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message=f"Fallback search gagal: {str(e)}",
+                error=str(e),
+            )
+
     async def _fill_add_modal(self, page, value: str, timeout: int = 30000) -> bool:
         """
         Coba isi modal tambah data baru.
@@ -197,7 +264,6 @@ class Select2Action(BaseAction):
             return False
             
         except Exception as e:
-            self._log("WARNING", f"Failed to fill add modal: {e}")
             return False
     
     async def _try_add_new(self, page, selector: str, value: str, timeout: int = 30000) -> bool:
@@ -243,7 +309,6 @@ class Select2Action(BaseAction):
             return False
             
         except Exception as e:
-            self._log("WARNING", f"Failed to add new option: {e}")
             return False
     
     def _substitute_variables(self, text: str, context: ExecutionContext) -> str:

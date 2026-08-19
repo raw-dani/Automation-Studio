@@ -355,7 +355,7 @@ class DataSourceManager(QWidget):
 
         # Preview table
         self.preview_table = QTableWidget()
-        self.preview_table.setMaximumHeight(200)
+        self.preview_table.setMaximumHeight(500)
         self.preview_table.horizontalHeader().setStretchLastSection(True)
         self.preview_table.setAlternatingRowColors(True)
         self.preview_table.setStyleSheet("""
@@ -709,7 +709,7 @@ class DataSourceManager(QWidget):
                 self._update_status(f"❌ Validasi gagal: {', '.join(errors)}", is_error=True)
                 return
 
-            rows = source.get_preview(config, max_rows=20)
+            rows = source.get_preview(config, max_rows=1000)
 
             if not rows:
                 QMessageBox.information(self, "Preview", "No data found.")
@@ -746,7 +746,7 @@ class DataSourceManager(QWidget):
 
             # Auto-adjust max height
             row_height = 22
-            max_height = min(len(rows) * row_height + 30, 200)
+            max_height = min(len(rows) * row_height + 30, 500)
             self.preview_table.setMaximumHeight(max_height)
 
             self._update_status(f"✅ Preview berhasil: {len(rows)} baris, {len(headers)} kolom.")

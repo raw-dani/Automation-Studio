@@ -4,8 +4,10 @@ Handle retry, error, screenshot, dan resume.
 """
 
 import os
+import sys
 import uuid
 import asyncio
+import subprocess
 from datetime import datetime
 from typing import Optional, Callable
 
@@ -41,6 +43,51 @@ class ExecutionEngine:
         self._on_log: Optional[Callable] = None
         self.license_manager: Optional[LicenseManager] = None
         self.usage_tracker: Optional[UsageTracker] = None
+        self._completed_count = 0
+        self._failed_count = 0
+        self._skipped_count = 0
+    
+    def _get_app_dir(self) -> str:
+        """Dapatkan direktori aplikasi (berisi EXE/config.yaml)."""
+        if getattr(sys, 'frozen', False):
+            return os.path.dirname(sys.executable)
+        return os.getcwd()
+    
+    def _filter_rows_by_range(self, rows: list, row_range: dict) -> list:
+        """Filter data rows sesuai row_range config dari UI."""
+        if not row_range or row_range.get("mode") == "all":
+            return rows
+        
+        mode = row_range.get("mode", "all")
+        if mode == "single":
+            row_num = max(1, int(row_range.get("row", 1)))
+            idx = row_num - 1
+            if 0 <= idx < len(rows):
+                return [rows[idx]]
+            return []
+        
+        if mode == "range":
+            range_str = row_range.get("range_str", "")
+            selected_indices = set()
+            for part in range_str.split(","):
+                part = part.strip()
+                if "-" in part:
+                    try:
+                        start, end = part.split("-", 1)
+                        start = int(start.strip())
+                        end = int(end.strip())
+                        for i in range(start, end + 1):
+                            selected_indices.add(i - 1)
+                    except Exception:
+                        continue
+                else:
+                    try:
+                        selected_indices.add(int(part) - 1)
+                    except Exception:
+                        continue
+            return [rows[i] for i in sorted(selected_indices) if 0 <= i < len(rows)]
+        
+        return rows
     
     @property
     def is_running(self) -> bool:
@@ -92,7 +139,87 @@ class ExecutionEngine:
                 "step_id": step_id,
                 "status": status,
                 "percentage": (current / total * 100) if total > 0 else 0,
+                "completed_steps": self._completed_count,
+                "failed_steps": self._failed_count,
+                "skipped_steps": self._skipped_count,
             })
+    
+    async def _ensure_browser_installed(self, browser_type: str) -> None:
+        """Pastikan browser Playwright terinstall sebelum dijalankan."""
+        # Skip auto-install di bundled mode (EXE PyInstaller)
+        if getattr(sys, 'frozen', False):
+            self._log("INFO", "Bundled mode detected. Skipping browser auto-install.")
+            return
+            
+        try:
+            from playwright.async_api import async_playwright
+            pw = await async_playwright().start()
+            launcher = {
+                "chromium": pw.chromium,
+                "firefox": pw.firefox,
+                "webkit": pw.webkit,
+            }.get(browser_type, pw.chromium)
+            
+            executable_path = launcher.executable_path
+            if not os.path.exists(executable_path):
+                self._log("WARNING", f"Browser {browser_type} belum terinstall. Mencari executable di: {executable_path}")
+                self._log("INFO", f"Sedang menginstall browser {browser_type}...")
+                await launcher.install()
+                self._log("SUCCESS", f"Browser {browser_type} berhasil diinstall.")
+            
+            await pw.stop()
+        except Exception as e:
+            self._log("ERROR", f"Gagal install browser {browser_type}: {e}")
+            self._log("ERROR", "Silakan jalankan manual: python -m playwright install")
+            raise RuntimeError(
+                f"Browser Playwright ({browser_type}) tidak terinstall.\n"
+                f"Silakan jalankan perintah berikut di terminal:\n"
+                f"    python -m playwright install {browser_type}\n"
+                f"Atau install semua browser:\n"
+                f"    python -m playwright install"
+            ) from e
+    
+    def _find_system_browser_executable(self, browser_type: str) -> Optional[str]:
+        """Cari executable Chrome/Edge/Firefox yang terinstall di sistem."""
+        import winreg
+        
+        if browser_type == "chromium":
+            chrome_paths = [
+                os.path.join(os.environ.get("PROGRAMFILES", ""), "Google", "Chrome", "Application", "chrome.exe"),
+                os.path.join(os.environ.get("PROGRAMFILES(X86)", ""), "Google", "Chrome", "Application", "chrome.exe"),
+                os.path.join(os.environ.get("LOCALAPPDATA", ""), "Google", "Chrome", "Application", "chrome.exe"),
+            ]
+            for path in chrome_paths:
+                if os.path.exists(path):
+                    return path
+            
+            try:
+                key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe")
+                value, _ = winreg.QueryValueEx(key, "")
+                winreg.CloseKey(key)
+                if os.path.exists(value):
+                    return value
+            except Exception:
+                pass
+            
+            edge_paths = [
+                os.path.join(os.environ.get("PROGRAMFILES", ""), "Microsoft", "Edge", "Application", "msedge.exe"),
+                os.path.join(os.environ.get("PROGRAMFILES(X86)", ""), "Microsoft", "Edge", "Application", "msedge.exe"),
+            ]
+            for path in edge_paths:
+                if os.path.exists(path):
+                    return path
+        
+        elif browser_type == "firefox":
+            firefox_paths = [
+                os.path.join(os.environ.get("PROGRAMFILES", ""), "Mozilla Firefox", "firefox.exe"),
+                os.path.join(os.environ.get("PROGRAMFILES(X86)", ""), "Mozilla Firefox", "firefox.exe"),
+            ]
+            for path in firefox_paths:
+                if os.path.exists(path):
+                    return path
+        
+        return None
     
     async def _init_browser(self) -> None:
         """Inisialisasi browser Playwright.
@@ -104,9 +231,14 @@ class ExecutionEngine:
         """
         from playwright.async_api import async_playwright
         
+        # Support both 'playwright' and 'engine' config keys for backward compatibility
         playwright_config = self.config.get("playwright", {})
-        browser_type = playwright_config.get("browser", "chromium")
-        headless = playwright_config.get("headless", False)
+        engine_config = self.config.get("engine", {})
+        # Merge: engine config is base, playwright config overrides (from UI)
+        merged_playwright = {**engine_config, **playwright_config}
+        
+        browser_type = merged_playwright.get("browser", "chromium")
+        headless = merged_playwright.get("headless", False)
         session_config = self.config.get("session", {})
         session_mode = session_config.get("mode", "default")
         
@@ -116,10 +248,23 @@ class ExecutionEngine:
         if perf_mode in ("turbo", "bulk"):
             slow_mo = perf_config.get(perf_mode, {}).get("slow_mo", 0)
         else:
-            slow_mo = playwright_config.get("slow_mo", 100)
+            slow_mo = merged_playwright.get("slow_mo", 100)
         
         self._perf_mode = perf_mode
         self._perf_config = perf_config.get(perf_mode, {})
+        
+        # Ensure Playwright browsers are installed before launching (skip for connect mode)
+        if session_mode != "connect":
+            await self._ensure_browser_installed(browser_type)
+        
+        # Detect system browser (Chrome/Edge) untuk bundled mode
+        executable_path = None
+        if session_mode != "connect":
+            executable_path = self._find_system_browser_executable(browser_type)
+            if executable_path:
+                self._log("INFO", f"System browser detected: {executable_path}")
+            else:
+                self._log("WARNING", "System browser not found. Playwright will try bundled browser.")
         
         self._playwright = await async_playwright().start()
         
@@ -129,7 +274,7 @@ class ExecutionEngine:
             "webkit": self._playwright.webkit,
         }.get(browser_type, self._playwright.chromium)
         
-        viewport = playwright_config.get("viewport", {"width": 1280, "height": 720})
+        viewport = merged_playwright.get("viewport", {"width": 1280, "height": 720})
         
         if session_mode == "connect":
             # Mode CONNECT: Sambungkan ke browser yang sudah running (Chrome/Edge)
@@ -161,11 +306,14 @@ class ExecutionEngine:
             # Login sekali, session tersimpan untuk eksekusi berikutnya
             persistent_config = session_config.get("persistent", {})
             user_data_dir = persistent_config.get("user_data_dir", "browser_session")
-            login_url = persistent_config.get("login_url", "") or playwright_config.get("start_url", "")
+            login_url = persistent_config.get("login_url", "") or merged_playwright.get("start_url", "")
             login_timeout = persistent_config.get("login_timeout", 120)
             
-            import os
-            user_data_dir_abs = os.path.abspath(user_data_dir)
+            if getattr(sys, 'frozen', False):
+                user_data_dir_abs = os.path.join(self._get_app_dir(), user_data_dir)
+            else:
+                user_data_dir_abs = os.path.abspath(user_data_dir)
+            user_data_dir_abs = os.path.abspath(user_data_dir_abs)
             os.makedirs(user_data_dir_abs, exist_ok=True)
             
             self._log("INFO", f"Using persistent session directory: {user_data_dir_abs}")
@@ -181,6 +329,7 @@ class ExecutionEngine:
                 slow_mo=slow_mo,
                 viewport=viewport,
                 no_viewport=False,
+                executable_path=executable_path,
             )
             
             # Ambil halaman yang sudah ada atau buat baru
@@ -211,6 +360,7 @@ class ExecutionEngine:
             self._browser = await browser_launcher.launch(
                 headless=headless,
                 slow_mo=slow_mo,
+                executable_path=executable_path,
             )
             
             self._page = await self._browser.new_page(
@@ -267,6 +417,10 @@ class ExecutionEngine:
             return None
         
         screenshots_dir = self.config.get("paths", {}).get("screenshots", "screenshots")
+        if getattr(sys, 'frozen', False):
+            screenshots_dir = os.path.join(self._get_app_dir(), screenshots_dir)
+        else:
+            screenshots_dir = os.path.abspath(screenshots_dir)
         os.makedirs(screenshots_dir, exist_ok=True)
         
         prefix = "error" if is_error else "step"
@@ -366,8 +520,13 @@ class ExecutionEngine:
                         self._log("WARNING", f"  JS Errors after click: {result.data['js_errors']}")
                 
                 if result.status == ActionStatus.SUCCESS:
+                    self._completed_count += 1
                     self._update_progress(step_index, total_steps, step.id, "success")
+                elif result.status == ActionStatus.SKIPPED:
+                    self._skipped_count += 1
+                    self._update_progress(step_index, total_steps, step.id, "skipped")
                 else:
+                    self._failed_count += 1
                     self._update_progress(step_index, total_steps, step.id, "failed")
                 
                 return result
@@ -381,7 +540,7 @@ class ExecutionEngine:
                 
                 # Screenshot error
                 screenshot_path = await self._take_screenshot(step.id, is_error=True)
-                
+                self._failed_count += 1
                 self._update_progress(step_index, total_steps, step.id, "failed")
                 
                 return ActionResult(
@@ -445,6 +604,13 @@ class ExecutionEngine:
         if not data_rows:
             self._log("WARNING", f"No data found in data source, skipping loop {step.id}")
             return {"next_index": loop_start_index + 1}
+        
+        # Filter rows sesuai row_range config dari UI
+        row_range = self.config.get("execution", {}).get("row_range", {"mode": "all"})
+        original_count = len(data_rows)
+        data_rows = self._filter_rows_by_range(data_rows, row_range)
+        if row_range.get("mode") != "all":
+            self._log("INFO", f"Row filter active: {original_count} -> {len(data_rows)} rows (mode={row_range.get('mode')})")
         
         # Tentukan loop body
         if step.children:
@@ -527,6 +693,9 @@ class ExecutionEngine:
                             elif body_step.on_error == "skip":
                                 self._log("WARNING", f"Skipping error at step {child_result['step_id']}")
                                 continue
+                    self._completed_count = sum(1 for r in results if r["status"] == "success")
+                    self._failed_count = sum(1 for r in results if r["status"] == "failed")
+                    self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
                     continue
                 
                 result = await self._execute_step(body_step, context, loop_start_index + 1, total_iterations * len(loop_body))
@@ -539,6 +708,10 @@ class ExecutionEngine:
                     "screenshot": result.screenshot_path,
                     "error": result.error,
                 })
+                
+                self._completed_count = sum(1 for r in results if r["status"] == "success")
+                self._failed_count = sum(1 for r in results if r["status"] == "failed")
+                self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
                 
                 if result.status == ActionStatus.FAILED:
                     if body_step.on_error == "stop":
@@ -658,6 +831,8 @@ class ExecutionEngine:
                 failed_step = next((s for s in step.children if s.id == child_result["step_id"]), None)
                 if failed_step and failed_step.on_error == "skip":
                     child_result["status"] = "skipped"
+                    self._failed_count -= 1
+                    self._skipped_count += 1
                 elif failed_step and failed_step.on_error == "stop":
                     self._log("ERROR", f"Parallel group stopped due to error at step {failed_step.id}")
                     return child_results
@@ -686,6 +861,9 @@ class ExecutionEngine:
         execution_id = execution_id or str(uuid.uuid4())[:8]
         self._is_running = True
         self._is_paused = False
+        self._completed_count = 0
+        self._failed_count = 0
+        self._skipped_count = 0
         
         self._log("INFO", f"Starting workflow: {workflow.name} (ID: {execution_id})")
         self._log("INFO", f"Total steps: {len(workflow.steps)}")
@@ -716,14 +894,23 @@ class ExecutionEngine:
                 except Exception as e:
                     self._log("WARNING", f"Failed to navigate to URL '{target_url}': {e}")
             
+            screenshots_dir = self.config.get("paths", {}).get("screenshots", "screenshots")
+            logs_dir = self.config.get("paths", {}).get("logs", "logs")
+            if getattr(sys, 'frozen', False):
+                screenshots_dir = os.path.join(self._get_app_dir(), screenshots_dir)
+                logs_dir = os.path.join(self._get_app_dir(), logs_dir)
+            else:
+                screenshots_dir = os.path.abspath(screenshots_dir)
+                logs_dir = os.path.abspath(logs_dir)
+            
             # Buat execution context
             self._context = ExecutionContext(
                 page=self._page,
                 browser=self._browser,
                 workflow_id=workflow.id,
                 execution_id=execution_id,
-                screenshots_dir=self.config.get("paths", {}).get("screenshots", "screenshots"),
-                logs_dir=self.config.get("paths", {}).get("logs", "logs"),
+                screenshots_dir=screenshots_dir,
+                logs_dir=logs_dir,
                 config=self.config,
                 is_running=self._is_running,
                 is_paused=self._is_paused,
@@ -774,6 +961,9 @@ class ExecutionEngine:
                                 continue
                     if should_stop:
                         break
+                    self._completed_count = sum(1 for r in results if r["status"] == "success")
+                    self._failed_count = sum(1 for r in results if r["status"] == "failed")
+                    self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
                     i += 1
                     continue
                 
@@ -787,6 +977,11 @@ class ExecutionEngine:
                     "screenshot": result.screenshot_path,
                     "error": result.error,
                 })
+                
+                # Update counts from results so far
+                self._completed_count = sum(1 for r in results if r["status"] == "success")
+                self._failed_count = sum(1 for r in results if r["status"] == "failed")
+                self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
                 
                 # Handle on_error
                 if result.status == ActionStatus.FAILED:

@@ -22,6 +22,9 @@ from frontend.ui.main_window import MainWindow
 def load_config(config_path: str = "config.yaml") -> dict:
     """Load konfigurasi dari file YAML."""
     import yaml
+    if getattr(sys, 'frozen', False):
+        app_dir = os.path.dirname(sys.executable)
+        config_path = os.path.join(app_dir, config_path)
     if os.path.exists(config_path):
         with open(config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f) or {}

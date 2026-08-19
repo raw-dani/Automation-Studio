@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QProgressBar, QGroupBox, QLineEdit, QCheckBox, QSlider,
     QComboBox, QListWidget, QListWidgetItem, QScrollArea,
     QFrame, QSplitter, QSizePolicy, QAbstractItemView, QMessageBox,
+    QSpinBox,
 )
 from PySide6.QtCore import Qt, Signal, QThread, QTimer, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QPixmap, QPainter
@@ -388,6 +389,44 @@ class ExecutionPanel(QWidget):
         self.retry_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         settings_row2.addWidget(self.retry_combo)
 
+        settings_row2.addSpacing(12)
+        settings_row2.addWidget(QLabel("Rows:"))
+        self.row_range_combo = QComboBox()
+        self.row_range_combo.addItems(["All", "Single", "Range"])
+        self.row_range_combo.setCurrentText("All")
+        self.row_range_combo.setFixedWidth(70)
+        self.row_range_combo.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.row_range_combo.setToolTip(
+            "Pilih baris data yang akan diproses:\n"
+            "- All: Semua baris\n"
+            "- Single: Hanya 1 baris tertentu\n"
+            "- Range: Rentang baris (misal 2-10)"
+        )
+        settings_row2.addWidget(self.row_range_combo)
+
+        self.row_single_input = QSpinBox()
+        self.row_single_input.setRange(1, 999999)
+        self.row_single_input.setValue(1)
+        self.row_single_input.setFixedWidth(60)
+        self.row_single_input.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.row_single_input.setToolTip("Nomor baris yang akan diproses (1-based)")
+        self.row_single_input.hide()
+        settings_row2.addWidget(self.row_single_input)
+
+        self.row_range_input = QLineEdit("2-10")
+        self.row_range_input.setFixedWidth(70)
+        self.row_range_input.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.row_range_input.setToolTip("Rentang baris, contoh: 2-10 atau 5,8,12")
+        self.row_range_input.hide()
+        settings_row2.addWidget(self.row_range_input)
+
+        def on_row_range_changed(text):
+            is_single = text == "Single"
+            is_range = text == "Range"
+            self.row_single_input.setVisible(is_single)
+            self.row_range_input.setVisible(is_range)
+
+        self.row_range_combo.currentTextChanged.connect(on_row_range_changed)
         settings_row2.addStretch()
         settings_layout.addLayout(settings_row2)
 
@@ -649,10 +688,10 @@ class ExecutionPanel(QWidget):
         self.eta_label.setText("")
 
         # Apply settings to engine config
-        playwright_config = self.engine.config.setdefault("playwright", {})
-        playwright_config["headless"] = self.headless_cb.isChecked()
-        playwright_config["browser"] = self.browser_combo.currentText().lower()
-        playwright_config["slow_mo"] = self.slow_mo_slider.value()
+        engine_config = self.engine.config.setdefault("engine", {})
+        engine_config["headless"] = self.headless_cb.isChecked()
+        engine_config["browser"] = self.browser_combo.currentText().lower()
+        engine_config["slow_mo"] = self.slow_mo_slider.value()
 
         # Update monitoring config
         monitoring_config = self.engine.config.setdefault("monitoring", {})
@@ -667,6 +706,16 @@ class ExecutionPanel(QWidget):
         session_config["mode"] = self.session_mode_combo.currentText()
         session_config.setdefault("persistent", {})["user_data_dir"] = self.user_data_dir_input.text().strip()
         session_config.setdefault("connect", {})["ws_endpoint"] = self.cdp_endpoint_input.text().strip()
+
+        # Update row range config
+        execution_config = self.engine.config.setdefault("execution", {})
+        row_mode = self.row_range_combo.currentText().lower()
+        if row_mode == "single":
+            execution_config["row_range"] = {"mode": "single", "row": self.row_single_input.value()}
+        elif row_mode == "range":
+            execution_config["row_range"] = {"mode": "range", "range_str": self.row_range_input.text().strip()}
+        else:
+            execution_config["row_range"] = {"mode": "all"}
 
         self._has_checkpoint = False
 

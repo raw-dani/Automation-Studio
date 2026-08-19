@@ -1,5 +1,9 @@
 __pycache__/
 *.pyc
+.venv/
+venv/
+.env
+.env.*
 
 browser_session/
 
@@ -12,11 +16,14 @@ browser_session/
 .DS_Store
 Thumbs.db
 
-.env
-.env.*
-
 *.log
 logs/
 
 dist/
 build/
+dist_build/
+build_build/
+dist_build_cli/
+build_build_cli/
+dist_build_api/
+build_build_api/

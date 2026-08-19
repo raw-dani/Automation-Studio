@@ -26,8 +26,10 @@ class HttpSubmitAction(BaseAction):
             "submit_selector": "",
             "url": "",
             "extra_data": {},
+            "wait_before": 0,
             "wait_after": 0,
             "timeout": 10000,
+            "fallback_to_click": False,
         }
 
     def validate_params(self, params: dict) -> list[str]:
@@ -48,14 +50,17 @@ class HttpSubmitAction(BaseAction):
         submit_selector = params.get("submit_selector", "")
         url = params.get("url", "")
         extra_data = params.get("extra_data", {})
+        wait_before = params.get("wait_before", 0)
         wait_after = params.get("wait_after", 0)
         timeout = params.get("timeout", 10000)
+        fallback_to_click = params.get("fallback_to_click", False)
 
-        if wait_after > 0:
-            await asyncio.sleep(wait_after / 1000)
+        if wait_before > 0:
+            await asyncio.sleep(wait_before / 1000)
 
+        http_result = None
         try:
-            result = await page.evaluate("""async (args) => {
+            http_result = await page.evaluate("""async (args) => {
                 const formSel = args.formSel;
                 const submitSel = args.submitSel;
                 const url = args.url;
@@ -98,43 +103,75 @@ class HttpSubmitAction(BaseAction):
                 }
             }""", {"formSel": form_selector, "submitSel": submit_selector, "url": url, "extra": extra_data})
 
-            if "error" in result:
+            if "error" in http_result:
+                if fallback_to_click and submit_selector:
+                    return await self._fallback_click_submit(page, submit_selector, wait_after)
                 return ActionResult(
                     status=ActionStatus.FAILED,
-                    message=result["error"],
-                    error=result["error"],
+                    message=http_result["error"],
+                    error=http_result["error"],
                 )
 
-            if result.get("success") or result.get("status") == 302:
-                parsed = result.get("parsed")
+            if http_result.get("success") or http_result.get("status") == 302:
+                parsed = http_result.get("parsed")
                 if isinstance(parsed, dict) and parsed.get("Status") is False:
+                    if fallback_to_click and submit_selector:
+                        return await self._fallback_click_submit(page, submit_selector, wait_after)
                     return ActionResult(
                         status=ActionStatus.FAILED,
                         message="Server menolak submit: {}".format(parsed.get("Pesan", "Unknown error")),
                         error="Business logic error",
                         data={"server_response": parsed},
                     )
+                
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
+                
                 return ActionResult(
                     status=ActionStatus.SUCCESS,
-                    message="HTTP submit berhasil (status {})".format(result.get("status")),
+                    message="HTTP submit berhasil (status {})".format(http_result.get("status")),
                     data={
-                        "url": result.get("url"),
-                        "status": result.get("status"),
-                        "fields_submitted": len(result.get("body", "")),
+                        "url": http_result.get("url"),
+                        "status": http_result.get("status"),
+                        "fields_submitted": len(http_result.get("body", "")),
                     },
                 )
+
+            if fallback_to_click and submit_selector:
+                return await self._fallback_click_submit(page, submit_selector, wait_after)
 
             return ActionResult(
                 status=ActionStatus.FAILED,
                 message="HTTP submit gagal: status {} - {}".format(
-                    result.get("status"), result.get("body", "")[:500]
+                    http_result.get("status"), http_result.get("body", "")[:500]
                 ),
-                error="HTTP {}".format(result.get("status")),
+                error="HTTP {}".format(http_result.get("status")),
             )
 
         except Exception as e:
+            if fallback_to_click and submit_selector:
+                return await self._fallback_click_submit(page, submit_selector, wait_after)
             return ActionResult(
                 status=ActionStatus.FAILED,
                 message="Gagal HTTP submit: {}".format(str(e)),
+                error=str(e),
+            )
+
+    async def _fallback_click_submit(self, page, submit_selector: str, wait_after: int = 0):
+        """Fallback: klik tombol submit jika HTTP submit gagal."""
+        try:
+            await page.wait_for_selector(submit_selector, state="visible", timeout=10000)
+            await page.locator(submit_selector).first.click()
+            if wait_after > 0:
+                await asyncio.sleep(wait_after / 1000)
+            return ActionResult(
+                status=ActionStatus.SUCCESS,
+                message="Submit berhasil via fallback click",
+                data={"fallback": True},
+            )
+        except Exception as e:
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message="Fallback click submit gagal: {}".format(str(e)),
                 error=str(e),
             )
