@@ -77,11 +77,11 @@ class SelectDropdownAction(BaseAction):
             
             # Select berdasarkan metode
             if select_by == "label":
-                await page.select_option(visible_selector, label=select_value)
+                await page.select_option(visible_selector, label=select_value, timeout=timeout)
             elif select_by == "value":
-                await page.select_option(visible_selector, value=select_value)
+                await page.select_option(visible_selector, value=select_value, timeout=timeout)
             elif select_by == "index":
-                await page.select_option(visible_selector, index=int(select_value))
+                await page.select_option(visible_selector, index=int(select_value), timeout=timeout)
             
             if wait_after > 0:
                 await asyncio.sleep(wait_after / 1000)
@@ -93,20 +93,33 @@ class SelectDropdownAction(BaseAction):
             )
             
         except Exception as e:
-            # Fallback: jika ini Select2 widget, coba interaksi via Select2 UI
-            if "select2-hidden-accessible" in selector or await self._is_select2(page, play_selector):
-                fallback = await self._select2_fallback(page, play_selector, select_by, select_value, timeout, wait_after)
-                if fallback.status == ActionStatus.SUCCESS:
-                    return fallback
-                return ActionResult(
-                    status=ActionStatus.FAILED,
-                    message=f"Gagal pilih dropdown '{selector}': {str(e)}",
-                    error=str(e),
-                )
+            fallback_attempted = False
+            fallback_error = str(e)
+            fallback_result = None
+            
+            try:
+                is_select2 = False
+                if "select2-hidden-accessible" in selector or "select2" in selector:
+                    is_select2 = True
+                else:
+                    is_select2 = await self._is_select2(page, play_selector)
+                
+                if is_select2:
+                    fallback_attempted = True
+                    fallback_result = await self._select2_fallback(page, play_selector, select_by, select_value, timeout, wait_after)
+                    if fallback_result.status == ActionStatus.SUCCESS:
+                        return fallback_result
+                    fallback_error = fallback_result.message
+            except Exception:
+                pass
+            
+            msg = f"Gagal pilih dropdown '{selector}': {fallback_error}"
+            if fallback_attempted:
+                msg = f"Gagal pilih dropdown '{selector}': native select gagal ({str(e)}), Select2 fallback juga gagal ({fallback_error})"
             return ActionResult(
                 status=ActionStatus.FAILED,
-                message=f"Gagal pilih dropdown '{selector}': {str(e)}",
-                error=str(e),
+                message=msg,
+                error=str(e) if not fallback_attempted else fallback_error,
             )
     
     async def _is_select2(self, page, selector: str) -> bool:
@@ -123,75 +136,145 @@ class SelectDropdownAction(BaseAction):
     async def _select2_fallback(self, page, selector, select_by, select_value, timeout, wait_after):
         """Fallback interaksi untuk Select2 widget."""
         try:
-            adjacent_trigger = f"{selector} + .select2-container .select2-selection--single, {selector} + .select2-container"
-            container_id = selector.replace("#", "select2-") + "-container"
-            container_trigger = f"#{container_id} .select2-selection--single, #{container_id}"
-            click_target = f"{adjacent_trigger}, {container_trigger}"
+            base_id = selector.replace("#", "")
+            container_id = f"select2-{base_id}-container"
             
-            await page.locator(click_target).first.wait_for(state="visible", timeout=timeout)
-            await page.locator(click_target).first.click(timeout=timeout)
-            await asyncio.sleep(0.8)
+            # Strategy A: Klik trigger via Playwright menggunakan ID container yang diprediksi
+            trigger_selectors = [
+                f"#{container_id} .select2-selection--single",
+                f"#{container_id}",
+                f"{selector} + .select2-container .select2-selection--single",
+                f"{selector} + .select2-container",
+            ]
             
-            results_selector = ".select2-dropdown, .select2-container--open .select2-results, .select2-dropdown--below .select2-results, .select2-dropdown--above .select2-results"
-            await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
+            clicked = False
+            for sel in trigger_selectors:
+                try:
+                    loc = page.locator(sel).first
+                    await loc.wait_for(state="visible", timeout=3000)
+                    await loc.click(timeout=timeout)
+                    clicked = True
+                    break
+                except Exception:
+                    continue
+            
+            if not clicked:
+                return ActionResult(
+                    status=ActionStatus.FAILED,
+                    message="Select2 trigger tidak ditemukan.",
+                    error="Trigger not found",
+                )
+            
+            await asyncio.sleep(1.0)
+            
+            # Buka dropdown via JS jika belum terbuka
+            await page.evaluate("""() => {
+                const containers = document.querySelectorAll('.select2-container');
+                for (const c of containers) {
+                    if (!c.classList.contains('select2-container--open')) {
+                        const evt = new MouseEvent('mousedown', { bubbles: true });
+                        c.dispatchEvent(evt);
+                    }
+                }
+            }""")
             await asyncio.sleep(0.5)
             
-            # Build candidate selectors based on select_by
+            # Tunggu dropdown terbuka
+            results_selector = ".select2-dropdown, .select2-container--open .select2-results, .select2-dropdown--below .select2-results, .select2-dropdown--above .select2-results"
+            try:
+                await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
+            except Exception:
+                pass
+            await asyncio.sleep(0.5)
+            
+            # Cari opsi via Playwright selector
             candidates = []
             if select_by == "label":
-                candidates.append(f".select2-container--open .select2-results__option:has-text('{select_value}'), .select2-dropdown .select2-results__option:has-text('{select_value}')")
-                candidates.append(f".select2-container--open .select2-results__option[data-value='{select_value}'], .select2-dropdown .select2-results__option[data-value='{select_value}']")
+                candidates.append(f"#{container_id} .select2-results__option:has-text('{select_value}')")
+                candidates.append(f".select2-container--open .select2-results__option:has-text('{select_value}')")
             elif select_by == "value":
-                candidates.append(f".select2-container--open .select2-results__option[data-value='{select_value}'], .select2-dropdown .select2-results__option[data-value='{select_value}']")
-                candidates.append(f".select2-container--open .select2-results__option:has-text('{select_value}'), .select2-dropdown .select2-results__option:has-text('{select_value}')")
+                candidates.append(f"#{container_id} .select2-results__option[data-value='{select_value}']")
+                candidates.append(f".select2-container--open .select2-results__option[data-value='{select_value}']")
             else:
-                candidates.append(f".select2-container--open .select2-results__option:has-text('{select_value}'), .select2-dropdown .select2-results__option:has-text('{select_value}')")
-                candidates.append(f".select2-container--open .select2-results__option[data-value='{select_value}'], .select2-dropdown .select2-results__option[data-value='{select_value}']")
+                candidates.append(f"#{container_id} .select2-results__option:has-text('{select_value}')")
+                candidates.append(f".select2-container--open .select2-results__option:has-text('{select_value}')")
             
             option_selector = ", ".join(candidates)
             count = await page.locator(option_selector).count()
             if count > 0:
                 await page.locator(option_selector).first.click(timeout=timeout)
-            else:
-                # Fallback 2: cari dengan partial match / case insensitive via JS
-                js_result = await page.evaluate("""(args) => {
-                    const searchText = args.value.toLowerCase();
-                    const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
-                    for (const opt of options) {
-                        const text = (opt.textContent || '').trim().toLowerCase();
-                        if (text.includes(searchText) || text === searchText) {
-                            opt.scrollIntoView({block: 'center'});
-                            opt.click();
-                            return {found: true, text: opt.textContent.trim()};
-                        }
-                    }
-                    // Return available options for debug
-                    const available = Array.from(options).map(o => o.textContent.trim()).filter(t => t);
-                    return {found: false, available: available.slice(0, 20)};
-                }""", {"value": select_value})
-                
-                if js_result.get("found"):
-                    if wait_after > 0:
-                        await asyncio.sleep(wait_after / 1000)
-                    return ActionResult(
-                        status=ActionStatus.SUCCESS,
-                        message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}' via JS fallback",
-                        data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2_js"},
-                    )
-                
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
                 return ActionResult(
-                    status=ActionStatus.FAILED,
-                    message=f"Opsi '{select_value}' tidak ditemukan di Select2 dropdown. Available: {js_result.get('available', [])}",
-                    error="Option not found",
+                    status=ActionStatus.SUCCESS,
+                    message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}'",
+                    data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2"},
                 )
             
-            if wait_after > 0:
-                await asyncio.sleep(wait_after / 1000)
+            # Strategy B: JS fallback - cari dan klik opsi via JavaScript
+            js_result = await page.evaluate("""(args) => {
+                const searchText = args.value.toLowerCase();
+                const container = document.querySelector('#' + args.containerId);
+                const scope = container || document;
+                const options = scope.querySelectorAll('.select2-results__option, .select2-dropdown .select2-results__option');
+                for (const opt of options) {
+                    const text = (opt.textContent || '').trim().toLowerCase();
+                    const dataValue = (opt.getAttribute('data-value') || '').toLowerCase();
+                    if (text.includes(searchText) || text === searchText || dataValue === searchText || dataValue.includes(searchText)) {
+                        opt.scrollIntoView({block: 'center'});
+                        opt.click();
+                        return {found: true, text: opt.textContent.trim()};
+                    }
+                }
+                const available = Array.from(options).map(o => o.textContent.trim()).filter(t => t);
+                return {found: false, available: available.slice(0, 20)};
+            }""", {"value": select_value, "containerId": container_id})
+            
+            if js_result.get("found"):
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
+                return ActionResult(
+                    status=ActionStatus.SUCCESS,
+                    message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}' via JS",
+                    data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2_js"},
+                )
+            
+            # Strategy C: Direct Select2 API via jQuery
+            js_direct = await page.evaluate("""(args) => {
+                const searchText = args.value;
+                const selectEl = document.querySelector(args.selector);
+                if (!selectEl || typeof jQuery === 'undefined') return {found: false, reason: 'no_jquery'};
+                
+                try {
+                    const $select = jQuery(selectEl);
+                    if (!$select.hasClass('select2-hidden-accessible')) return {found: false, reason: 'not_select2'};
+                    
+                    $select.val(searchText).trigger('change.select2');
+                    return {found: true, method: 'jquery_change'};
+                } catch (e) {
+                    return {found: false, reason: e.message};
+                }
+            }""", {"selector": selector, "value": select_value})
+            
+            if js_direct.get("found"):
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
+                return ActionResult(
+                    status=ActionStatus.SUCCESS,
+                    message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}' via jQuery trigger",
+                    data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2_jquery"},
+                )
             
             return ActionResult(
-                status=ActionStatus.SUCCESS,
-                message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}'",
-                data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2"},
+                status=ActionStatus.FAILED,
+                message=f"Opsi '{select_value}' tidak ditemukan di Select2 dropdown. Reason: {js_direct.get('reason', 'unknown')}. Available: {js_result.get('available', [])}",
+                error="Option not found",
+            )
+        except Exception as e:
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message=f"Select2 fallback gagal: {str(e)}",
+                error=str(e),
             )
         except Exception as e:
             return ActionResult(

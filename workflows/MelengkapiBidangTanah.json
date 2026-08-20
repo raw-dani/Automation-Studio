@@ -387,14 +387,16 @@
     },
     {
       "id": "step_23",
-      "type": "select_dropdown",
+      "type": "select2",
       "label": "Pilih Penggunaan Umum",
       "params": {
         "selector": "#penggunaanumum",
-        "select_by": "value",
-        "select_value": "{{data.Penggunaan}}",
-        "selector_type": "css",
-        "timeout": 10000
+        "value": "{{data.Penggunaan}}",
+        "clear_first": true,
+        "timeout": 10000,
+        "wait_before": 500,
+        "wait_after": 100,
+        "fallback_to_search": true
       },
       "on_error": "stop",
       "retry": {
@@ -419,15 +421,16 @@
     },
     {
       "id": "step_25",
-      "type": "select_dropdown",
+      "type": "select2",
       "label": "Pilih Pemanfaatan Khusus",
       "params": {
-        "select_by": "value",
-        "select_value": "{{data.Pemanfaatan}}",
         "selector": "#penggunaankhusus",
-        "selector_type": "css",
+        "value": "{{data.Pemanfaatan}}",
+        "clear_first": true,
         "timeout": 10000,
-        "wait_before": 550
+        "wait_before": 550,
+        "wait_after": 100,
+        "fallback_to_search": true
       },
       "on_error": "stop",
       "retry": {
@@ -437,14 +440,16 @@
     },
     {
       "id": "step_26",
-      "type": "select_dropdown",
+      "type": "select2",
       "label": "Pilih Metode Ukur",
       "params": {
         "selector": "#metodeukur",
-        "select_by": "value",
-        "select_value": "{{data.Metode Ukur}}",
-        "selector_type": "css",
-        "timeout": 10000
+        "value": "{{data.Metode Ukur}}",
+        "clear_first": true,
+        "timeout": 10000,
+        "wait_before": 500,
+        "wait_after": 100,
+        "fallback_to_search": true
       },
       "on_error": "stop",
       "retry": {
@@ -454,14 +459,16 @@
     },
     {
       "id": "step_27",
-      "type": "select_dropdown",
+      "type": "select2",
       "label": "Pilih Alat Ukur",
       "params": {
-        "select_by": "value",
-        "select_value": "GPS Geodetic",
         "selector": "#alatukur",
-        "selector_type": "css",
-        "timeout": 10000
+        "value": "GPS Geodetic",
+        "clear_first": true,
+        "timeout": 10000,
+        "wait_before": 500,
+        "wait_after": 100,
+        "fallback_to_search": true
       },
       "on_error": "stop",
       "retry": {
