@@ -2,11 +2,7 @@
 setlocal enabledelayedexpansion
 
 :: ============================================================
-:: Automation Studio - Windows Launcher
-:: - Checks Python
-:: - Creates/uses venv
-:: - Installs dependencies
-:: - Runs the app
+:: Automation Studio - Setup & Run
 :: ============================================================
 
 set "APP_DIR=%~dp0"
@@ -22,7 +18,7 @@ echo ============================================================
 echo.
 
 :: 1. Check Python
-echo [1/5] Checking Python installation...
+echo [1/4] Checking Python installation...
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python tidak ditemukan.
@@ -39,16 +35,25 @@ if errorlevel 1 (
 for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VER=%%i
 echo [OK] Python ditemukan: %PYTHON_VER%
 
+:: Get Python executable path
+for /f "tokens=*" %%i in ('where python') do set PYTHON_EXE_PATH=%%i
+echo [OK] Python path: %PYTHON_EXE_PATH%
+
 :: 2. Check/create virtual environment
 echo.
-echo [2/5] Checking virtual environment...
+echo [2/4] Checking virtual environment...
 if exist "%VENV_DIR%\Scripts\python.exe" (
-    echo [OK] Virtual environment sudah ada.
-    goto :activate_venv
+    "%VENV_DIR%\Scripts\python.exe" --version >nul 2>&1
+    if not errorlevel 1 (
+        echo [OK] Virtual environment sudah ada dan valid.
+        goto :activate_venv
+    )
+    echo [WARNING] Virtual environment rusak, membuat ulang...
+    rmdir /s /q "%VENV_DIR%"
 )
 
-echo [INFO] Virtual environment belum ada. Membuat venv baru...
-python -m venv "%VENV_DIR%"
+echo [INFO] Membuat virtual environment baru...
+"%PYTHON_EXE_PATH%" -m venv "%VENV_DIR%"
 if errorlevel 1 (
     echo [ERROR] Gagal membuat virtual environment.
     pause
@@ -64,19 +69,9 @@ if not exist "%PYTHON_EXE%" (
     exit /b 1
 )
 
-:: 3. Upgrade pip
+:: 3. Install/update dependencies
 echo.
-echo [3/5] Upgrading pip...
-"%PYTHON_EXE%" -m pip install --upgrade pip --quiet
-if errorlevel 1 (
-    echo [WARNING] Gagal upgrade pip, melanjutkan dengan versi existing...
-) else (
-    echo [OK] pip upgraded.
-)
-
-:: 4. Install/update dependencies
-echo.
-echo [4/5] Checking dependencies...
+echo [3/4] Checking dependencies...
 if not exist "%REQ_FILE%" (
     echo [WARNING] File requirements.txt tidak ditemukan: %REQ_FILE%
     echo [WARNING] Melewati instalasi dependencies.
@@ -85,7 +80,7 @@ if not exist "%REQ_FILE%" (
 
 echo [INFO] Installing dependencies dari requirements.txt...
 echo [INFO] Ini mungkin memakan beberapa menit pada pertama kali...
-"%PYTHON_EXE%" -m pip install -r "%REQ_FILE%" --quiet
+"%PYTHON_EXE%" -m pip install -r "%REQ_FILE%"
 if errorlevel 1 (
     echo [ERROR] Gagal install beberapa dependencies.
     echo Coba jalankan manual:
@@ -95,9 +90,9 @@ if errorlevel 1 (
 )
 echo [OK] Semua dependencies terinstall.
 
-:: 5. Check Tesseract OCR (optional but recommended)
+:: 4. Check Tesseract OCR (optional but recommended)
 echo.
-echo [5/5] Checking optional dependencies...
+echo [4/4] Checking optional dependencies...
 where tesseract >nul 2>&1
 if errorlevel 1 (
     echo [WARNING] Tesseract OCR tidak ditemukan di PATH.
@@ -121,6 +116,7 @@ if errorlevel 1 (
 :: ============================================================
 :: Run Application
 :: ============================================================
+:run_app
 echo.
 echo ============================================================
 echo    Starting Automation Studio...
