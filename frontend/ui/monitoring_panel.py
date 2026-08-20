@@ -24,9 +24,10 @@ LOG_COLORS = {
     "WARNING": QColor("#FF9800"),
     "ERROR": QColor("#f44336"),
     "DEBUG": QColor("#999"),
+    "LOOP": QColor("#00BCD4"),
 }
 
-LOG_LEVELS = ["ALL", "INFO", "SUCCESS", "WARNING", "ERROR", "DEBUG"]
+LOG_LEVELS = ["ALL", "INFO", "SUCCESS", "WARNING", "ERROR", "DEBUG", "LOOP"]
 
 
 class ScreenshotPreviewDialog(QDialog):
@@ -516,7 +517,10 @@ class MonitoringPanel(QWidget):
             return  # Skip, search filtered out
 
         # Set color
-        color = LOG_COLORS.get(level, QColor("#d4d4d4"))
+        if "Loop iteration" in message:
+            color = LOG_COLORS.get("LOOP", QColor("#00BCD4"))
+        else:
+            color = LOG_COLORS.get(level, QColor("#d4d4d4"))
         self._append_colored_text(log_line, color)
 
         # Update count
@@ -565,6 +569,8 @@ class MonitoringPanel(QWidget):
             log_line = f"{time_str} | {log_level:8s} | {step_str}{message}\n"
 
             color = LOG_COLORS.get(log_level, QColor("#d4d4d4"))
+            if "Loop iteration" in message:
+                color = LOG_COLORS.get("LOOP", QColor("#00BCD4"))
             self._append_colored_text(log_line, color)
 
         visible_count = self.log_text.document().blockCount()

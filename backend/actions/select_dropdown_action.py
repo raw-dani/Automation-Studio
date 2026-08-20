@@ -130,11 +130,11 @@ class SelectDropdownAction(BaseAction):
             
             await page.locator(click_target).first.wait_for(state="visible", timeout=timeout)
             await page.locator(click_target).first.click(timeout=timeout)
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.8)
             
             results_selector = ".select2-dropdown, .select2-container--open .select2-results, .select2-dropdown--below .select2-results, .select2-dropdown--above .select2-results"
             await page.wait_for_selector(results_selector, state="visible", timeout=timeout)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.5)
             
             # Build candidate selectors based on select_by
             candidates = []
@@ -153,9 +153,35 @@ class SelectDropdownAction(BaseAction):
             if count > 0:
                 await page.locator(option_selector).first.click(timeout=timeout)
             else:
+                # Fallback 2: cari dengan partial match / case insensitive via JS
+                js_result = await page.evaluate("""(args) => {
+                    const searchText = args.value.toLowerCase();
+                    const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
+                    for (const opt of options) {
+                        const text = (opt.textContent || '').trim().toLowerCase();
+                        if (text.includes(searchText) || text === searchText) {
+                            opt.scrollIntoView({block: 'center'});
+                            opt.click();
+                            return {found: true, text: opt.textContent.trim()};
+                        }
+                    }
+                    // Return available options for debug
+                    const available = Array.from(options).map(o => o.textContent.trim()).filter(t => t);
+                    return {found: false, available: available.slice(0, 20)};
+                }""", {"value": select_value})
+                
+                if js_result.get("found"):
+                    if wait_after > 0:
+                        await asyncio.sleep(wait_after / 1000)
+                    return ActionResult(
+                        status=ActionStatus.SUCCESS,
+                        message=f"Berhasil pilih '{select_value}' dari Select2 dropdown '{selector}' via JS fallback",
+                        data={"selector": selector, "value": select_value, "by": select_by, "fallback": "select2_js"},
+                    )
+                
                 return ActionResult(
                     status=ActionStatus.FAILED,
-                    message=f"Opsi '{select_value}' tidak ditemukan di Select2 dropdown.",
+                    message=f"Opsi '{select_value}' tidak ditemukan di Select2 dropdown. Available: {js_result.get('available', [])}",
                     error="Option not found",
                 )
             
