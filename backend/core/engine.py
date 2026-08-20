@@ -309,10 +309,12 @@ class ExecutionEngine:
             login_url = persistent_config.get("login_url", "") or merged_playwright.get("start_url", "")
             login_timeout = persistent_config.get("login_timeout", 120)
             
-            if getattr(sys, 'frozen', False):
-                user_data_dir_abs = os.path.join(self._get_app_dir(), user_data_dir)
+            # Selalu resolve relative to app directory, bukan CWD
+            app_dir = self._get_app_dir()
+            if os.path.isabs(user_data_dir):
+                user_data_dir_abs = user_data_dir
             else:
-                user_data_dir_abs = os.path.abspath(user_data_dir)
+                user_data_dir_abs = os.path.join(app_dir, user_data_dir)
             user_data_dir_abs = os.path.abspath(user_data_dir_abs)
             os.makedirs(user_data_dir_abs, exist_ok=True)
             
@@ -320,6 +322,12 @@ class ExecutionEngine:
             
             # Cek apakah sudah ada session sebelumnya (ada file cookies/localStorage)
             has_existing_session = os.path.exists(os.path.join(user_data_dir_abs, "Default"))
+            
+            # Log status session
+            if has_existing_session:
+                self._log("INFO", "Existing browser session found. Attempting to reuse login state.")
+            else:
+                self._log("INFO", "No existing session found. Fresh browser session will be created.")
             
             # Gunakan launch_persistent_context untuk menyimpan session
             self._browser = None
@@ -393,6 +401,10 @@ class ExecutionEngine:
                 await self._browser.close()
             except Exception:
                 pass
+        
+        # Beri waktu Chrome menulis profile ke disk (penting di Windows 11)
+        import asyncio
+        await asyncio.sleep(1.0)
         
         if self._playwright:
             try:
