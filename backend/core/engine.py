@@ -116,6 +116,7 @@ class ExecutionEngine:
     
     def _log(self, level: str, message: str, data: dict = None) -> None:
         """Internal logging."""
+        message = self._short(message)
         log_data = {
             "timestamp": datetime.now().isoformat(),
             "level": level,
@@ -129,6 +130,30 @@ class ExecutionEngine:
         # Callback ke UI
         if self._on_log:
             self._on_log(log_data)
+    
+    def _short(self, text: str, limit: int = 200) -> str:
+        """Ringkas pesan log agar tidak terlalu panjang di UI."""
+        if not text:
+            return text
+        text = str(text)
+        if len(text) <= limit:
+            return text
+        return text[: limit - 3] + "..."
+    
+    def _short_row(self, row_data: dict, keys: list = None) -> str:
+        """Ringkas data baris untuk log loop."""
+        if not row_data:
+            return "{}"
+        if keys is None:
+            keys = ["Nama", "NIK", "Alamat", "Pemanfaatan", "Penggunaan", "Metode Ukur", "nama", "alamat", "email", "phone"]
+        parts = []
+        for k in keys:
+            if k in row_data:
+                v = str(row_data[k])
+                if len(v) > 40:
+                    v = v[:37] + "..."
+                parts.append(f"{k}={v}")
+        return "{" + ", ".join(parts) + "}"
     
     def _update_progress(self, current: int, total: int, step_id: str, status: str) -> None:
         """Update progress ke callback."""
@@ -484,7 +509,7 @@ class ExecutionEngine:
         action = self.action_registry.get(step.type)
         if not action:
             error_msg = f"Action type '{step.type}' tidak ditemukan di registry."
-            self._log("ERROR", error_msg)
+            self._log("ERROR", self._short(error_msg))
             return ActionResult(
                 status=ActionStatus.FAILED,
                 message=error_msg,
@@ -518,7 +543,7 @@ class ExecutionEngine:
                 
                 self._log(
                     "INFO" if result.status == ActionStatus.SUCCESS else "ERROR",
-                    f"Step {step.id}: {result.status.value} - {result.message}",
+                    f"Step {step.id}: {result.status.value} - {self._short(result.message)}",
                 )
                 
                 # Log detailed diagnostics jika ada
@@ -545,7 +570,7 @@ class ExecutionEngine:
                 
             except Exception as e:
                 last_error = str(e)
-                self._log("WARNING", f"Step {step.id} error (attempt {attempt+1}): {e}")
+                self._log("WARNING", f"Step {step.id} error (attempt {attempt+1}): {self._short(str(e))}")
                 
                 if attempt < max_retries:
                     continue
@@ -605,12 +630,12 @@ class ExecutionEngine:
                 config = data_source_config.get("config", {})
                 errors = source.validate_config(config)
                 if errors:
-                    self._log("ERROR", f"Data source validation errors: {errors}")
+                    self._log("ERROR", f"Data source validation errors: {self._short(errors)}")
                     return {"next_index": loop_start_index + 1}
                 for row in source.read(config):
                     data_rows.append(row)
         except Exception as e:
-            self._log("ERROR", f"Failed to read data source: {e}")
+            self._log("ERROR", f"Failed to read data source: {self._short(str(e))}")
             return {"next_index": loop_start_index + 1}
         
         if not data_rows:
@@ -674,7 +699,7 @@ class ExecutionEngine:
                 break
             
             context.current_data = row.data
-            self._log("INFO", f"Loop iteration {iteration + 1}/{total_iterations}: {row.data}")
+            self._log("INFO", f"Loop {iteration + 1}/{total_iterations}: {self._short_row(row.data)}")
             
             for body_step in loop_body:
                 if not self._is_running:

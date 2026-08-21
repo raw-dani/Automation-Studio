@@ -115,7 +115,20 @@ class Select2Action(BaseAction):
 
                 option_selector = await self._find_option(page, value, timeout=timeout)
 
-                if option_selector:
+                if option_selector == "__JS__":
+                    await page.evaluate("""(args) => {
+                        const searchText = args.value.trim().toLowerCase();
+                        const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
+                        for (const opt of options) {
+                            const text = (opt.textContent || '').trim().toLowerCase();
+                            if (text === searchText || text.includes(searchText)) {
+                                opt.scrollIntoView({block: 'center'});
+                                opt.click();
+                                return;
+                            }
+                        }
+                    }""", {"value": value})
+                elif option_selector:
                     await page.locator(option_selector).first.click(timeout=timeout)
                 elif add_new:
                     add_result = await self._try_add_new(page, selector, value, timeout)
@@ -134,7 +147,20 @@ class Select2Action(BaseAction):
             else:
                 option_selector = await self._find_option(page, value, timeout=timeout)
 
-                if option_selector:
+                if option_selector == "__JS__":
+                    await page.evaluate("""(args) => {
+                        const searchText = args.value.trim().toLowerCase();
+                        const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
+                        for (const opt of options) {
+                            const text = (opt.textContent || '').trim().toLowerCase();
+                            if (text === searchText || text.includes(searchText)) {
+                                opt.scrollIntoView({block: 'center'});
+                                opt.click();
+                                return;
+                            }
+                        }
+                    }""", {"value": value})
+                elif option_selector:
                     await page.locator(option_selector).first.click(timeout=timeout)
                 elif add_new:
                     add_result = await self._try_add_new(page, selector, value, timeout)
@@ -168,7 +194,8 @@ class Select2Action(BaseAction):
             )
 
     async def _find_option(self, page, value: str, timeout: int = 5000):
-        """Cari opsi Select2: exact match dulu, lalu fallback partial match (contains)."""
+        """Cari opsi Select2: exact match dulu, lalu fallback partial match (contains), lalu JS fallback."""
+        normalized_value = value.strip().lower()
         exact_selectors = [
             ".select2-container--open .select2-results__option:has-text('%s')" % value,
             ".select2-dropdown .select2-results__option:has-text('%s')" % value,
@@ -180,6 +207,22 @@ class Select2Action(BaseAction):
         partial_xpath = "//li[contains(@class,'select2-results__option') and contains(., '%s')]" % value
         if await page.locator(f"xpath={partial_xpath}").count() > 0:
             return f"xpath={partial_xpath}"
+
+        # Strategy 3: JS fallback - case insensitive + whitespace normalized
+        js_result = await page.evaluate("""(args) => {
+            const searchText = args.value.trim().toLowerCase();
+            const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
+            for (const opt of options) {
+                const text = (opt.textContent || '').trim().toLowerCase();
+                if (text === searchText || text.includes(searchText)) {
+                    return true;
+                }
+            }
+            return false;
+        }""", {"value": value})
+        
+        if js_result:
+            return "__JS__"
 
         return None
 
@@ -213,7 +256,27 @@ class Select2Action(BaseAction):
             await asyncio.sleep(0.6)
 
             option_selector = await self._find_option(page, value, timeout)
-            if option_selector:
+            if option_selector == "__JS__":
+                await page.evaluate("""(args) => {
+                    const searchText = args.value.trim().toLowerCase();
+                    const options = document.querySelectorAll('.select2-container--open .select2-results__option, .select2-dropdown .select2-results__option');
+                    for (const opt of options) {
+                        const text = (opt.textContent || '').trim().toLowerCase();
+                        if (text === searchText || text.includes(searchText)) {
+                            opt.scrollIntoView({block: 'center'});
+                            opt.click();
+                            return;
+                        }
+                    }
+                }""", {"value": value})
+                if wait_after > 0:
+                    await asyncio.sleep(wait_after / 1000)
+                return ActionResult(
+                    status=ActionStatus.SUCCESS,
+                    message=f"Berhasil pilih Select2 via search fallback '{selector}' dengan nilai: {value}",
+                    data={"selector": selector, "search_selector": target_input, "value": value, "fallback": True},
+                )
+            elif option_selector:
                 await page.locator(option_selector).first.click(timeout=timeout)
                 if wait_after > 0:
                     await asyncio.sleep(wait_after / 1000)
