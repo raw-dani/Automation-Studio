@@ -286,7 +286,8 @@
         "timeout": 10000,
         "wait_before": 300,
         "wait_after": 100,
-        "fallback_to_search": true
+        "fallback_to_search": true,
+        "type_delay": 0
       },
       "on_error": "stop",
       "retry": {
@@ -320,7 +321,8 @@
         "timeout": 10000,
         "wait_before": 300,
         "wait_after": 100,
-        "fallback_to_search": true
+        "fallback_to_search": true,
+        "type_delay": 0
       },
       "on_error": "stop",
       "retry": {
@@ -339,7 +341,8 @@
         "timeout": 10000,
         "wait_before": 300,
         "wait_after": 100,
-        "fallback_to_search": true
+        "fallback_to_search": true,
+        "type_delay": 0
       },
       "on_error": "stop",
       "retry": {

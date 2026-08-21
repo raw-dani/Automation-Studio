@@ -28,6 +28,7 @@ class Select2Action(BaseAction):
             "skip_if_empty": False,  # Skip step jika value kosong
             "add_new": False,        # Jika true, klik tombol add new jika opsi tidak ditemukan
             "fallback_to_search": False,  # Jika true, coba gunakan search field langsung jika gagal klik trigger
+            "type_delay": 0,         # Delay pengetikan di search field (ms). 0 = gunakan fill() instan
         }
     
     def validate_params(self, params: dict) -> list[str]:
@@ -76,7 +77,8 @@ class Select2Action(BaseAction):
             return result
 
         if params.get("fallback_to_search"):
-            fallback = await self._try_search_fallback(page, selector, search_selector, value, timeout, clear_first, wait_after)
+            type_delay = params.get("type_delay", 0)
+            fallback = await self._try_search_fallback(page, selector, search_selector, value, timeout, clear_first, wait_after, type_delay)
             if fallback.status == ActionStatus.SUCCESS:
                 return fallback
             return result
@@ -226,7 +228,7 @@ class Select2Action(BaseAction):
 
         return None
 
-    async def _try_search_fallback(self, page, selector, search_selector, value, timeout, clear_first, wait_after):
+    async def _try_search_fallback(self, page, selector, search_selector, value, timeout, clear_first, wait_after, type_delay=0):
         """Fallback: coba gunakan search field Select2 langsung tanpa klik trigger."""
         try:
             search_input_selector = search_selector or ".select2-search__field, .select2-container--open .select2-search__field, .select2-dropdown .select2-search__field"
@@ -250,10 +252,13 @@ class Select2Action(BaseAction):
 
             if clear_first:
                 await input_field.fill("")
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.1)
 
-            await input_field.type(value, delay=80)
-            await asyncio.sleep(0.6)
+            if type_delay and type_delay > 0:
+                await input_field.type(value, delay=type_delay)
+            else:
+                await input_field.fill(value)
+            await asyncio.sleep(0.3)
 
             option_selector = await self._find_option(page, value, timeout)
             if option_selector == "__JS__":

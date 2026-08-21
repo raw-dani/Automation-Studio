@@ -373,15 +373,15 @@ class ExecutionPanel(QWidget):
         slow_mo_row.addStretch()
         settings_layout.addLayout(slow_mo_row)
 
-        # Row: Resume + Retry
+        # Row: Resume + Retry + Skip + Rows
         settings_row2 = QHBoxLayout()
 
-        self.resume_from_cb = QCheckBox("Resume from checkpoint")
+        self.resume_from_cb = QCheckBox("Resume")
         self.resume_from_cb.setStyleSheet("font-size: 10px;")
         self.resume_from_cb.setEnabled(False)
         settings_row2.addWidget(self.resume_from_cb)
 
-        settings_row2.addWidget(QLabel("Max Retry:"))
+        settings_row2.addWidget(QLabel("Retry:"))
         self.retry_combo = QComboBox()
         self.retry_combo.addItems(["0", "1", "2", "3", "5", "10"])
         self.retry_combo.setCurrentText("3")
@@ -389,7 +389,7 @@ class ExecutionPanel(QWidget):
         self.retry_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         settings_row2.addWidget(self.retry_combo)
 
-        self.skip_failed_rows_cb = QCheckBox("Skip failed rows")
+        self.skip_failed_rows_cb = QCheckBox("Skip failed")
         self.skip_failed_rows_cb.setStyleSheet("font-size: 10px;")
         self.skip_failed_rows_cb.setToolTip(
             "Jika aktif, baris yang gagal akan dilewati dan eksekusi dilanjutkan ke baris berikutnya.\n"
@@ -411,7 +411,7 @@ class ExecutionPanel(QWidget):
         settings_row2.addWidget(self.skip_action_combo)
 
         self.skip_action_target = QLineEdit()
-        self.skip_action_target.setFixedWidth(160)
+        self.skip_action_target.setFixedWidth(140)
         self.skip_action_target.setPlaceholderText("URL atau selector")
         self.skip_action_target.setStyleSheet("font-size: 10px; padding: 2px;")
         self.skip_action_target.setToolTip("URL untuk Navigate, atau CSS selector untuk Click")
@@ -422,7 +422,6 @@ class ExecutionPanel(QWidget):
             self.skip_action_target.setVisible(text != "None")
 
         self.skip_action_combo.currentTextChanged.connect(on_skip_action_changed)
-        settings_row2.addStretch()
 
         settings_row2.addSpacing(12)
         settings_row2.addWidget(QLabel("Rows:"))
@@ -449,7 +448,7 @@ class ExecutionPanel(QWidget):
         settings_row2.addWidget(self.row_single_input)
 
         self.row_range_input = QLineEdit("1-5")
-        self.row_range_input.setFixedWidth(90)
+        self.row_range_input.setFixedWidth(80)
         self.row_range_input.setStyleSheet("font-size: 10px; padding: 2px;")
         self.row_range_input.setPlaceholderText("3,7,14 atau 1-5")
         self.row_range_input.setToolTip(
@@ -470,7 +469,16 @@ class ExecutionPanel(QWidget):
         self.row_range_combo.currentTextChanged.connect(on_row_range_changed)
         settings_layout.addLayout(settings_row2)
 
-        layout.addWidget(settings_group)
+        # Wrap settings in scroll area for proportional height
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setMinimumHeight(180)
+        scroll_area.setMaximumHeight(320)
+        scroll_area.setWidget(settings_group)
+        layout.addWidget(scroll_area)
 
         # ==================== PROGRESS SECTION ====================
         progress_group = QGroupBox("Progress")
