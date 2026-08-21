@@ -61,7 +61,7 @@
     {
       "id": "step_4",
       "type": "select2",
-      "label": "Pilih Desa BANGUNSARI via Select2",
+      "label": "Pilih Desa via Select2",
       "params": {
         "clear_first": true,
         "selector": "#desa",
@@ -251,133 +251,23 @@
     },
     {
       "id": "step_15",
-      "type": "input_text",
-      "label": "Input Keadaan Tanah",
+      "type": "batch_input",
+      "label": "Batch Input Form Fields",
       "params": {
-        "selector": "#keadaantanah",
-        "value": "{{data.Keadaan Tanah}}",
+        "fields": {
+          "#keadaantanah": "{{data.Keadaan Tanah}}",
+          "#tandabatas": "{{data.Tanda Batas}}",
+          "#penunjukbatas": "{{data.Penunjuk Batas}}",
+          "#hallain": "{{data.Hal lain-lain}}",
+          "#namajalan": "{{data.Nama Jalan}}",
+          "#nomorjalan": "{{data.Nomor Jalan}}",
+          "#alamattambahan": "{{data.Alamat Tambahan}}",
+          "#kodepos": "{{data.Kode Pos}}"
+        },
         "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_16",
-      "type": "input_text",
-      "label": "Input Tanda Batas",
-      "params": {
-        "selector": "#tandabatas",
-        "value": "{{data.Tanda Batas}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_17",
-      "type": "input_text",
-      "label": "Input Penunjuk Batas",
-      "params": {
-        "selector": "#penunjukbatas",
-        "value": "{{data.Penunjuk Batas}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_18",
-      "type": "input_text",
-      "label": "Input Hal lain-lain",
-      "params": {
-        "selector": "#hallain",
-        "value": "{{data.Hal lain-lain}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_19",
-      "type": "input_text",
-      "label": "Input Nama Jalan",
-      "params": {
-        "selector": "#namajalan",
-        "value": "{{data.Nama Jalan}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_20",
-      "type": "input_text",
-      "label": "Input Nomor Jalan",
-      "params": {
-        "selector": "#nomorjalan",
-        "value": "{{data.Nomor Jalan}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_21",
-      "type": "input_text",
-      "label": "Input Alamat Tambahan",
-      "params": {
-        "selector": "#alamattambahan",
-        "value": "{{data.Alamat Tambahan}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
-      },
-      "on_error": "stop",
-      "retry": {
-        "max_retries": 3,
-        "delay": 2000
-      }
-    },
-    {
-      "id": "step_22",
-      "type": "input_text",
-      "label": "Input Kode Pos",
-      "params": {
-        "selector": "#kodepos",
-        "value": "{{data.Kode Pos}}",
-        "clear_first": true,
-        "selector_type": "css",
-        "timeout": 10000
+        "timeout": 10000,
+        "wait_after": 100,
+        "trigger_events": true
       },
       "on_error": "stop",
       "retry": {
@@ -394,7 +284,7 @@
         "value": "{{data.Penggunaan}}",
         "clear_first": true,
         "timeout": 10000,
-        "wait_before": 500,
+        "wait_before": 300,
         "wait_after": 100,
         "fallback_to_search": true
       },
@@ -410,7 +300,7 @@
       "label": "Tunggu Pemanfaatan termuat",
       "params": {
         "wait_type": "fixed",
-        "duration": 1000,
+        "duration": 500,
         "timeout": 10000
       },
       "on_error": "stop",
@@ -428,7 +318,7 @@
         "value": "{{data.Pemanfaatan}}",
         "clear_first": true,
         "timeout": 10000,
-        "wait_before": 550,
+        "wait_before": 300,
         "wait_after": 100,
         "fallback_to_search": true
       },
@@ -447,7 +337,7 @@
         "value": "{{data.Metode Ukur}}",
         "clear_first": true,
         "timeout": 10000,
-        "wait_before": 500,
+        "wait_before": 300,
         "wait_after": 100,
         "fallback_to_search": true
       },
@@ -466,7 +356,7 @@
         "value": "GPS Geodetic",
         "clear_first": true,
         "timeout": 10000,
-        "wait_before": 500,
+        "wait_before": 300,
         "wait_after": 100,
         "fallback_to_search": true
       },
@@ -486,7 +376,8 @@
         "clear_first": true,
         "selector_type": "css",
         "timeout": 10000,
-        "use_evaluate": true
+        "use_evaluate": true,
+        "wait_after": 50
       },
       "on_error": "stop",
       "retry": {
@@ -503,7 +394,8 @@
         "selector_type": "css",
         "force": true,
         "timeout": 5000,
-        "wait_for_load_state": "none"
+        "wait_for_load_state": "none",
+        "wait_after": 200
       },
       "on_error": "skip",
       "retry": {

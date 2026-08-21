@@ -27,6 +27,7 @@ from backend.monitoring.resume_handler import ResumeHandler
 
 from backend.actions.click_action import ClickAction
 from backend.actions.input_text_action import InputTextAction
+from backend.actions.batch_input_action import BatchInputAction
 from backend.actions.wait_action import WaitAction
 from backend.actions.select_dropdown_action import SelectDropdownAction
 from backend.actions.upload_file_action import UploadFileAction
@@ -48,6 +49,7 @@ def create_app(config: dict = None) -> FastAPI:
     action_registry = ActionRegistry()
     action_registry.register(ClickAction())
     action_registry.register(InputTextAction())
+    action_registry.register(BatchInputAction())
     action_registry.register(WaitAction())
     action_registry.register(SelectDropdownAction())
     action_registry.register(SelectAction())
@@ -238,6 +240,7 @@ async def list_actions():
     registry = ActionRegistry()
     registry.register(ClickAction())
     registry.register(InputTextAction())
+    registry.register(BatchInputAction())
     registry.register(WaitAction())
     registry.register(SelectDropdownAction())
     registry.register(SelectAction())

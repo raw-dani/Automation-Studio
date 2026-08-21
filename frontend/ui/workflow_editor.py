@@ -1042,6 +1042,7 @@ class WorkflowEditor(QWidget):
         from backend.actions.click_action import ClickAction
         from backend.actions.input_text_action import InputTextAction
         from backend.actions.input_date_action import InputDateAction
+        from backend.actions.batch_input_action import BatchInputAction
         from backend.actions.wait_action import WaitAction
         from backend.actions.select_dropdown_action import SelectDropdownAction
         from backend.actions.radio_select_action import RadioSelectAction
@@ -1054,6 +1055,7 @@ class WorkflowEditor(QWidget):
         registry.register(ClickAction())
         registry.register(InputTextAction())
         registry.register(InputDateAction())
+        registry.register(BatchInputAction())
         registry.register(WaitAction())
         registry.register(SelectDropdownAction())
         registry.register(RadioSelectAction())
@@ -1100,6 +1102,7 @@ class WorkflowEditor(QWidget):
         from backend.actions.click_action import ClickAction
         from backend.actions.input_text_action import InputTextAction
         from backend.actions.input_date_action import InputDateAction
+        from backend.actions.batch_input_action import BatchInputAction
         from backend.actions.wait_action import WaitAction
         from backend.actions.select_dropdown_action import SelectDropdownAction
         from backend.actions.radio_select_action import RadioSelectAction
@@ -1115,6 +1118,7 @@ class WorkflowEditor(QWidget):
         registry.register(ClickAction())
         registry.register(InputTextAction())
         registry.register(InputDateAction())
+        registry.register(BatchInputAction())
         registry.register(WaitAction())
         registry.register(SelectDropdownAction())
         registry.register(RadioSelectAction())

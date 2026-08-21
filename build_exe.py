@@ -70,6 +70,7 @@ def build_gui():
         "--hidden-import", "backend.actions.base_action",
         "--hidden-import", "backend.actions.click_action",
         "--hidden-import", "backend.actions.input_text_action",
+        "--hidden-import", "backend.actions.batch_input_action",
         "--hidden-import", "backend.actions.wait_action",
         "--hidden-import", "backend.actions.select_dropdown_action",
         "--hidden-import", "backend.actions.upload_file_action",
