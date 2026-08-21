@@ -90,6 +90,32 @@ class ExecutionEngine:
         
         return rows
     
+    async def _execute_skip_action(self, context: ExecutionContext, skip_action: dict) -> None:
+        """Eksekusi aksi setelah skip baris gagal."""
+        if not skip_action:
+            return
+        
+        mode = skip_action.get("mode", "none")
+        target = skip_action.get("target", "")
+        
+        if not mode or mode == "none" or not target:
+            return
+        
+        page = context.page
+        if not page:
+            return
+        
+        try:
+            if mode == "navigate":
+                self._log("INFO", f"Skip action: navigating to {target}")
+                await page.goto(target, wait_until="domcontentloaded", timeout=30000)
+            elif mode == "click":
+                self._log("INFO", f"Skip action: clicking {target}")
+                await page.wait_for_selector(target, state="visible", timeout=10000)
+                await page.locator(target).first.click()
+        except Exception as e:
+            self._log("WARNING", f"Skip action failed: {e}")
+    
     @property
     def is_running(self) -> bool:
         return self._is_running
@@ -746,9 +772,9 @@ class ExecutionEngine:
                             "error_step": body_step.id,
                             "error_message": "Parallel group step failed",
                         })
-                        self._failed_count = sum(1 for r in results if r["status"] == "failed")
-                        self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
-                        continue
+                        skip_action = self.config.get("execution", {}).get("skip_action", {})
+                        await self._execute_skip_action(context, skip_action)
+                        break
                     self._completed_count = sum(1 for r in results if r["status"] == "success")
                     self._failed_count = sum(1 for r in results if r["status"] == "failed")
                     self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
@@ -779,6 +805,8 @@ class ExecutionEngine:
                                 "error_step": body_step.id,
                                 "error_message": self._short(result.message),
                             })
+                            skip_action = self.config.get("execution", {}).get("skip_action", {})
+                            await self._execute_skip_action(context, skip_action)
                             break
                         else:
                             self._log("ERROR", f"Workflow stopped due to error at step {body_step.id}")

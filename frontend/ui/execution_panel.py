@@ -397,6 +397,33 @@ class ExecutionPanel(QWidget):
         )
         settings_row2.addWidget(self.skip_failed_rows_cb)
 
+        self.skip_action_combo = QComboBox()
+        self.skip_action_combo.addItems(["None", "Navigate", "Click"])
+        self.skip_action_combo.setCurrentText("None")
+        self.skip_action_combo.setFixedWidth(80)
+        self.skip_action_combo.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.skip_action_combo.setToolTip(
+            "Aksi setelah skip baris gagal:\n"
+            "- None: lanjut ke baris berikutnya\n"
+            "- Navigate: buka URL tertentu\n"
+            "- Click: klik elemen tertentu"
+        )
+        settings_row2.addWidget(self.skip_action_combo)
+
+        self.skip_action_target = QLineEdit()
+        self.skip_action_target.setFixedWidth(160)
+        self.skip_action_target.setPlaceholderText("URL atau selector")
+        self.skip_action_target.setStyleSheet("font-size: 10px; padding: 2px;")
+        self.skip_action_target.setToolTip("URL untuk Navigate, atau CSS selector untuk Click")
+        self.skip_action_target.hide()
+        settings_row2.addWidget(self.skip_action_target)
+
+        def on_skip_action_changed(text):
+            self.skip_action_target.setVisible(text != "None")
+
+        self.skip_action_combo.currentTextChanged.connect(on_skip_action_changed)
+        settings_row2.addStretch()
+
         settings_row2.addSpacing(12)
         settings_row2.addWidget(QLabel("Rows:"))
         self.row_range_combo = QComboBox()
@@ -441,7 +468,6 @@ class ExecutionPanel(QWidget):
             self.row_range_input.setVisible(is_custom)
 
         self.row_range_combo.currentTextChanged.connect(on_row_range_changed)
-        settings_row2.addStretch()
         settings_layout.addLayout(settings_row2)
 
         layout.addWidget(settings_group)
@@ -715,6 +741,10 @@ class ExecutionPanel(QWidget):
         execution_config = self.engine.config.setdefault("execution", {})
         execution_config["max_retries"] = int(self.retry_combo.currentText())
         execution_config["skip_failed_rows"] = self.skip_failed_rows_cb.isChecked()
+        execution_config["skip_action"] = {
+            "mode": self.skip_action_combo.currentText().lower(),
+            "target": self.skip_action_target.text().strip(),
+        }
 
         # Update session config
         session_config = self.engine.config.setdefault("session", {})
