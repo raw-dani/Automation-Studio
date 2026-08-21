@@ -46,6 +46,7 @@ class ExecutionEngine:
         self._completed_count = 0
         self._failed_count = 0
         self._skipped_count = 0
+        self._failed_rows: list[dict] = []
     
     def _get_app_dir(self) -> str:
         """Dapatkan direktori aplikasi (berisi EXE/config.yaml)."""
@@ -609,7 +610,7 @@ class ExecutionEngine:
         data_source_config = workflow.data_source
         if not data_source_config:
             self._log("WARNING", f"No data source configured for loop {step.id}")
-            return {"next_index": loop_start_index + 1}
+            return {"next_index": loop_start_index + 1, "failed_rows": []}
         
         # Baca data source
         data_rows = []
@@ -631,16 +632,16 @@ class ExecutionEngine:
                 errors = source.validate_config(config)
                 if errors:
                     self._log("ERROR", f"Data source validation errors: {self._short(errors)}")
-                    return {"next_index": loop_start_index + 1}
+                    return {"next_index": loop_start_index + 1, "failed_rows": []}
                 for row in source.read(config):
                     data_rows.append(row)
         except Exception as e:
             self._log("ERROR", f"Failed to read data source: {self._short(str(e))}")
-            return {"next_index": loop_start_index + 1}
+            return {"next_index": loop_start_index + 1, "failed_rows": []}
         
         if not data_rows:
             self._log("WARNING", f"No data found in data source, skipping loop {step.id}")
-            return {"next_index": loop_start_index + 1}
+            return {"next_index": loop_start_index + 1, "failed_rows": []}
         
         # Filter rows sesuai row_range config dari UI
         row_range = self.config.get("execution", {}).get("row_range", {"mode": "all"})
@@ -656,6 +657,8 @@ class ExecutionEngine:
             loop_body = workflow.steps[loop_start_index + 1:]
         
         total_iterations = len(data_rows)
+        skip_failed_rows = self.config.get("execution", {}).get("skip_failed_rows", False)
+        failed_rows: list[dict] = []
         
         # ==================== LICENSE ENFORCEMENT ====================
         # Cek kuota untuk free mode
@@ -713,6 +716,7 @@ class ExecutionEngine:
                 
                 if body_step.type == "parallel_group" and body_step.children:
                     child_results = await self._execute_parallel_group(body_step, context, loop_start_index + 1, total_iterations * len(loop_body))
+                    iteration_failed = False
                     for child_result in child_results:
                         results.append({
                             "step_id": child_result["step_id"],
@@ -725,11 +729,26 @@ class ExecutionEngine:
                         })
                         if child_result["status"] == "failed":
                             if body_step.on_error == "stop":
-                                self._log("ERROR", f"Workflow stopped due to error at step {child_result['step_id']}")
-                                return {"should_stop": True}
+                                if skip_failed_rows:
+                                    iteration_failed = True
+                                    self._log("WARNING", f"Skipping failed row {iteration + 1} due to step {child_result['step_id']}: {child_result['message']}")
+                                    break
+                                else:
+                                    self._log("ERROR", f"Workflow stopped due to error at step {child_result['step_id']}")
+                                    return {"should_stop": True}
                             elif body_step.on_error == "skip":
                                 self._log("WARNING", f"Skipping error at step {child_result['step_id']}")
                                 continue
+                    if iteration_failed:
+                        failed_rows.append({
+                            "row_number": row.row_number,
+                            "data": dict(row.data),
+                            "error_step": body_step.id,
+                            "error_message": "Parallel group step failed",
+                        })
+                        self._failed_count = sum(1 for r in results if r["status"] == "failed")
+                        self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
+                        continue
                     self._completed_count = sum(1 for r in results if r["status"] == "success")
                     self._failed_count = sum(1 for r in results if r["status"] == "failed")
                     self._skipped_count = sum(1 for r in results if r["status"] == "skipped")
@@ -752,8 +771,18 @@ class ExecutionEngine:
                 
                 if result.status == ActionStatus.FAILED:
                     if body_step.on_error == "stop":
-                        self._log("ERROR", f"Workflow stopped due to error at step {body_step.id}")
-                        return {"should_stop": True}
+                        if skip_failed_rows:
+                            self._log("WARNING", f"Skipping failed row {iteration + 1} due to error at step {body_step.id}: {self._short(result.message)}")
+                            failed_rows.append({
+                                "row_number": row.row_number,
+                                "data": dict(row.data),
+                                "error_step": body_step.id,
+                                "error_message": self._short(result.message),
+                            })
+                            break
+                        else:
+                            self._log("ERROR", f"Workflow stopped due to error at step {body_step.id}")
+                            return {"should_stop": True}
                     elif body_step.on_error == "skip":
                         self._log("WARNING", f"Skipping error at step {body_step.id}")
                         continue
@@ -768,9 +797,9 @@ class ExecutionEngine:
         
         # Jika tidak ada children, semua step setelah loop sudah dieksekusi
         if not step.children:
-            return {"next_index": len(workflow.steps)}
+            return {"next_index": len(workflow.steps), "failed_rows": failed_rows}
         else:
-            return {"next_index": loop_start_index + 1}
+            return {"next_index": loop_start_index + 1, "failed_rows": failed_rows}
     
     async def _execute_parallel_group(
         self,
@@ -909,6 +938,7 @@ class ExecutionEngine:
         results = []
         should_stop = False
         resume_index = 0
+        all_failed_rows: list[dict] = []
         
         # Cari index untuk resume
         if resume_from:
@@ -979,6 +1009,9 @@ class ExecutionEngine:
                     if loop_result.get("should_stop"):
                         should_stop = True
                         break
+                    failed_rows = loop_result.get("failed_rows", [])
+                    if failed_rows:
+                        all_failed_rows.extend(failed_rows)
                     i = loop_result.get("next_index", i + 1)
                     continue
                 
@@ -1071,6 +1104,7 @@ class ExecutionEngine:
             "success_count": success_count,
             "failed_count": failed_count,
             "results": results,
+            "failed_rows": all_failed_rows,
         }
         
         self._log("INFO", f"Workflow completed: {final_status} ({duration:.2f}s)")

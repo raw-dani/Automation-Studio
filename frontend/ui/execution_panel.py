@@ -389,6 +389,14 @@ class ExecutionPanel(QWidget):
         self.retry_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         settings_row2.addWidget(self.retry_combo)
 
+        self.skip_failed_rows_cb = QCheckBox("Skip failed rows")
+        self.skip_failed_rows_cb.setStyleSheet("font-size: 10px;")
+        self.skip_failed_rows_cb.setToolTip(
+            "Jika aktif, baris yang gagal akan dilewati dan eksekusi dilanjutkan ke baris berikutnya.\n"
+            "Failed rows akan dikumpulkan dan bisa di-retry setelah eksekusi selesai."
+        )
+        settings_row2.addWidget(self.skip_failed_rows_cb)
+
         settings_row2.addSpacing(12)
         settings_row2.addWidget(QLabel("Rows:"))
         self.row_range_combo = QComboBox()
@@ -706,6 +714,7 @@ class ExecutionPanel(QWidget):
         # Update retry config
         execution_config = self.engine.config.setdefault("execution", {})
         execution_config["max_retries"] = int(self.retry_combo.currentText())
+        execution_config["skip_failed_rows"] = self.skip_failed_rows_cb.isChecked()
 
         # Update session config
         session_config = self.engine.config.setdefault("session", {})
@@ -1108,6 +1117,11 @@ class ExecutionPanel(QWidget):
         self.continue_btn.setEnabled(False)
         self.execution_stopped.emit()
 
+        # Show failed rows dialog if any
+        failed_rows = result.get("failed_rows", [])
+        if failed_rows:
+            self._show_failed_rows_dialog(failed_rows)
+
     def _reset_buttons(self):
         """Reset button states."""
         self.start_btn.setEnabled(True)
@@ -1130,6 +1144,91 @@ class ExecutionPanel(QWidget):
     def _clear_step_highlights(self):
         """Clear all step highlights."""
         self.step_highlight_requested.emit("")
+
+    def _show_failed_rows_dialog(self, failed_rows: list[dict]):
+        """Tampilkan dialog daftar baris yang gagal dan opsi retry."""
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QLabel
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Failed Rows ({len(failed_rows)})")
+        dialog.setMinimumSize(600, 400)
+        
+        layout = QVBoxLayout(dialog)
+        
+        info_label = QLabel(
+            f"{len(failed_rows)} baris gagal diproses.\n"
+            "Anda bisa melewatkan baris ini atau mencoba input ulang."
+        )
+        info_label.setStyleSheet("font-weight: bold; font-size: 11px;")
+        layout.addWidget(info_label)
+        
+        text = QTextEdit()
+        text.setReadOnly(True)
+        text.setFont(QFont("Consolas", 9))
+        
+        content = "No. | Error Step | Error Message | Data (ringkas)\n"
+        content += "-" * 80 + "\n"
+        for i, row in enumerate(failed_rows, 1):
+            row_number = row.get("row_number", i)
+            error_step = row.get("error_step", "unknown")
+            error_msg = row.get("error_message", "unknown")[:60]
+            data = row.get("data", {})
+            data_str = ", ".join(f"{k}={v}" for k, v in list(data.items())[:3])[:60]
+            content += f"{row_number} | {error_step} | {error_msg} | {data_str}\n"
+        
+        text.setText(content)
+        layout.addWidget(text)
+        
+        btn_row = QHBoxLayout()
+        
+        retry_btn = QPushButton("Retry Failed Rows")
+        retry_btn.setStyleSheet("""
+            QPushButton {
+                background: #FF9800; color: white; padding: 8px 16px;
+                border-radius: 4px; font-weight: bold; font-size: 11px;
+            }
+            QPushButton:hover { background: #F57C00; }
+        """)
+        retry_btn.clicked.connect(lambda: self._retry_failed_rows(failed_rows, dialog))
+        btn_row.addWidget(retry_btn)
+        
+        close_btn = QPushButton("Close")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background: #607D8B; color: white; padding: 8px 16px;
+                border-radius: 4px; font-size: 11px;
+            }
+            QPushButton:hover { background: #546E7A; }
+        """)
+        close_btn.clicked.connect(dialog.accept)
+        btn_row.addWidget(close_btn)
+        
+        layout.addLayout(btn_row)
+        dialog.exec()
+
+    def _retry_failed_rows(self, failed_rows: list[dict], dialog: QDialog):
+        """Retry hanya baris yang gagal."""
+        dialog.accept()
+        
+        if not failed_rows:
+            return
+        
+        row_numbers = [r.get("row_number") for r in failed_rows if r.get("row_number")]
+        if not row_numbers:
+            QMessageBox.warning(self, "Retry Failed", "Tidak ada nomor baris yang valid untuk retry.")
+            return
+        
+        # Set row range ke baris yang gagal
+        row_range_str = ",".join(str(n) for n in sorted(row_numbers))
+        self.row_range_combo.setCurrentText("Custom")
+        self.row_range_input.setText(row_range_str)
+        self.row_range_input.setVisible(True)
+        
+        # Set skip_failed_rows tetap aktif agar retry bisa skip jika masih gagal
+        self.skip_failed_rows_cb.setChecked(True)
+        
+        # Jalankan lagi
+        self._start_execution()
 
 
 class ExecutionWorker(QThread):
