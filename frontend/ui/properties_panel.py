@@ -109,6 +109,21 @@ FIELD_DESCRIPTIONS = {
     "on_error": "Strategi penanganan error (stop, skip, retry)",
     "duration": "Durasi tunggu (ms) untuk wait action",
     "wait_type": "Jenis wait (fixed, until_visible, until_hidden, until_selector)",
+    "wait_for_load_state": "Tunggu state halaman setelah klik (none, domcontentloaded, load, networkidle)",
+    "use_evaluate": "Gunakan page.evaluate() untuk bypass selector engine",
+    "use_fill": "Gunakan fill() langsung tanpa simulasi ketik (lebih cepat)",
+    "skip_if_empty": "Skip step jika value kosong",
+    "fallback_to_search": "Gunakan search field Select2 langsung jika gagal klik trigger",
+    "fallback_to_click": "Fallback ke klik manual jika HTTP submit gagal",
+    "extra_data": "Data tambahan untuk HTTP submit (dict)",
+    "fields": "Dict {selector: value} untuk batch input",
+    "trigger_events": "Trigger event input/change setelah isi field",
+    "add_new": "Jika true, klik tombol add new jika opsi tidak ditemukan",
+    "method": "HTTP method untuk request API",
+    "headers": "HTTP headers dalam format JSON",
+    "body": "Request body dalam format JSON",
+    "pagination": "Aktifkan pagination untuk mengambil semua halaman data",
+    "page_param": "Nama parameter query untuk nomor halaman",
 }
 
 
@@ -761,7 +776,7 @@ class PropertiesPanel(QWidget):
         self.type_combo = QComboBox()
         self.type_combo.addItems([
             "click", "http_submit", "input_text", "input_date", "select", "select2", "select_dropdown", "radio_select",
-            "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group"
+            "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group", "batch_input"
         ])
         self.type_combo.setCurrentText(action_type)
         self.type_combo.currentTextChanged.connect(self._on_type_change)
@@ -773,17 +788,22 @@ class PropertiesPanel(QWidget):
         if action_type == "click":
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("selector_type", self.current_params.get("selector_type", "css"))
-            self._add_field("wait_before", self.current_params.get("wait_before", 500))
-            self._add_field("wait_after", self.current_params.get("wait_after", 500))
+            self._add_field("wait_before", self.current_params.get("wait_before", 0))
+            self._add_field("wait_after", self.current_params.get("wait_after", 0))
             self._add_field("force", self.current_params.get("force", False))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
+            self._add_field("wait_for_load_state", self.current_params.get("wait_for_load_state", "none"))
+            self._add_field("use_evaluate", self.current_params.get("use_evaluate", False))
 
         elif action_type == "http_submit":
             self._add_field("form_selector", self.current_params.get("form_selector", ""))
             self._add_field("selector_type", self.current_params.get("selector_type", "css"))
             self._add_field("submit_selector", self.current_params.get("submit_selector", ""))
+            self._add_field("url", self.current_params.get("url", ""))
             self._add_field("timeout", self.current_params.get("timeout", 10000))
+            self._add_field("wait_before", self.current_params.get("wait_before", 0))
             self._add_field("wait_after", self.current_params.get("wait_after", 0))
+            self._add_field("fallback_to_click", self.current_params.get("fallback_to_click", False))
 
         elif action_type == "input_text":
             self._add_field("selector", self.current_params.get("selector", ""))
@@ -791,8 +811,11 @@ class PropertiesPanel(QWidget):
             self._add_field("value", self.current_params.get("value", ""))
             self._add_field("clear_first", self.current_params.get("clear_first", True))
             self._add_field("type_delay", self.current_params.get("type_delay", 50))
-            self._add_field("wait_before", self.current_params.get("wait_before", 500))
-            self._add_field("wait_after", self.current_params.get("wait_after", 500))
+            self._add_field("use_fill", self.current_params.get("use_fill", False))
+            self._add_field("use_evaluate", self.current_params.get("use_evaluate", False))
+            self._add_field("skip_if_empty", self.current_params.get("skip_if_empty", False))
+            self._add_field("wait_before", self.current_params.get("wait_before", 0))
+            self._add_field("wait_after", self.current_params.get("wait_after", 0))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
 
         elif action_type == "input_date":
@@ -801,6 +824,8 @@ class PropertiesPanel(QWidget):
             self._add_field("value", self.current_params.get("value", ""))
             self._add_field("date_format", self.current_params.get("date_format", "dd|MM|yyyy->dd/MM/yyyy"))
             self._add_field("clear_first", self.current_params.get("clear_first", True))
+            self._add_field("use_evaluate", self.current_params.get("use_evaluate", True))
+            self._add_field("skip_if_empty", self.current_params.get("skip_if_empty", False))
             self._add_field("wait_before", self.current_params.get("wait_before", 0))
             self._add_field("wait_after", self.current_params.get("wait_after", 0))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
@@ -818,6 +843,10 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_after", self.current_params.get("wait_after", 500))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
             self._add_field("clear_first", self.current_params.get("clear_first", True))
+            self._add_field("skip_if_empty", self.current_params.get("skip_if_empty", False))
+            self._add_field("add_new", self.current_params.get("add_new", False))
+            self._add_field("fallback_to_search", self.current_params.get("fallback_to_search", False))
+            self._add_field("type_delay", self.current_params.get("type_delay", 0))
 
         elif action_type == "select_dropdown":
             self._add_field("selector", self.current_params.get("selector", ""))
@@ -848,7 +877,15 @@ class PropertiesPanel(QWidget):
             self._add_field("selector", self.current_params.get("selector", ""))
             self._add_field("file_path", self.current_params.get("file_path", ""))
             self._add_field("wait_before", self.current_params.get("wait_before", 500))
+            self._add_field("wait_after", self.current_params.get("wait_after", 1000))
             self._add_field("timeout", self.current_params.get("timeout", 30000))
+
+        elif action_type == "batch_input":
+            self._add_field("fields", self.current_params.get("fields", {}))
+            self._add_field("clear_first", self.current_params.get("clear_first", True))
+            self._add_field("wait_after", self.current_params.get("wait_after", 100))
+            self._add_field("timeout", self.current_params.get("timeout", 10000))
+            self._add_field("trigger_events", self.current_params.get("trigger_events", True))
 
         elif action_type == "loop":
             self._add_field("loop_type", self.current_params.get("loop_type", "count"))
@@ -1027,6 +1064,11 @@ class PropertiesPanel(QWidget):
         elif isinstance(value, list):
             widget = QLineEdit(", ".join(str(v) for v in value))
             widget.textChanged.connect(lambda v, k=key: self._on_list_param_change(k, v))
+        elif isinstance(value, dict):
+            import json
+            widget = QLineEdit(json.dumps(value, indent=2))
+            widget.setStyleSheet("font-family: Consolas, monospace; font-size: 10px;")
+            widget.textChanged.connect(lambda v, k=key: self._on_dict_param_change(k, v))
         elif isinstance(value, str) and key in ("selector_type", "select_by", "wait_type", "loop_type"):
             widget = QComboBox()
             options = {
@@ -1056,6 +1098,18 @@ class PropertiesPanel(QWidget):
 
         self.form_layout.addRow(f"{label}:", widget)
 
+    def _on_dict_param_change(self, key: str, value: str):
+        """Handle perubahan parameter dict (JSON)."""
+        import json
+        try:
+            parsed = json.loads(value)
+            self.current_params[key] = parsed
+        except json.JSONDecodeError:
+            self.current_params[key] = value
+        self.params_changed.emit(self.current_step_id, self.current_params)
+        if not self._building_form:
+            self._mark_modified()
+
     def _on_list_param_change(self, key: str, value: str):
         """Handle perubahan parameter list (comma-separated)."""
         items = [item.strip() for item in value.split(",") if item.strip()]
@@ -1076,6 +1130,7 @@ class PropertiesPanel(QWidget):
         from backend.core.action_registry import ActionRegistry
         from backend.actions.click_action import ClickAction
         from backend.actions.input_text_action import InputTextAction
+        from backend.actions.input_date_action import InputDateAction
         from backend.actions.batch_input_action import BatchInputAction
         from backend.actions.wait_action import WaitAction
         from backend.actions.select_dropdown_action import SelectDropdownAction
@@ -1091,6 +1146,7 @@ class PropertiesPanel(QWidget):
         registry = ActionRegistry()
         registry.register(ClickAction())
         registry.register(InputTextAction())
+        registry.register(InputDateAction())
         registry.register(BatchInputAction())
         registry.register(WaitAction())
         registry.register(SelectDropdownAction())

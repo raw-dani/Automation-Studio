@@ -399,13 +399,17 @@ class ExecutionPanel(QWidget):
         self.retry_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         exec_row1.addWidget(self.retry_combo)
 
+        exec_row1.addStretch()
+        exec_layout.addLayout(exec_row1)
+
+        exec_row2 = QHBoxLayout()
         self.skip_failed_rows_cb = QCheckBox("Skip failed")
         self.skip_failed_rows_cb.setStyleSheet("font-size: 10px;")
         self.skip_failed_rows_cb.setToolTip(
             "Jika aktif, baris yang gagal akan dilewati dan eksekusi dilanjutkan ke baris berikutnya.\n"
             "Failed rows akan dikumpulkan dan bisa di-retry setelah eksekusi selesai."
         )
-        exec_row1.addWidget(self.skip_failed_rows_cb)
+        exec_row2.addWidget(self.skip_failed_rows_cb)
 
         self.skip_action_combo = QComboBox()
         self.skip_action_combo.addItems(["None", "Navigate", "Click"])
@@ -417,7 +421,7 @@ class ExecutionPanel(QWidget):
             "- Navigate: buka URL tertentu\n"
             "- Click: klik elemen tertentu"
         )
-        exec_row1.addWidget(self.skip_action_combo)
+        exec_row2.addWidget(self.skip_action_combo)
 
         self.skip_action_target = QLineEdit()
         self.skip_action_target.setPlaceholderText("URL atau selector")
@@ -425,14 +429,14 @@ class ExecutionPanel(QWidget):
         self.skip_action_target.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.skip_action_target.setToolTip("URL untuk Navigate, atau CSS selector untuk Click")
         self.skip_action_target.hide()
-        exec_row1.addWidget(self.skip_action_target, 1)
+        exec_row2.addWidget(self.skip_action_target, 1)
 
         def on_skip_action_changed(text):
             self.skip_action_target.setVisible(text != "None")
 
         self.skip_action_combo.currentTextChanged.connect(on_skip_action_changed)
-        exec_row1.addStretch()
-        exec_layout.addLayout(exec_row1)
+        exec_row2.addStretch()
+        exec_layout.addLayout(exec_row2)
 
         settings_layout.addWidget(exec_group)
 
