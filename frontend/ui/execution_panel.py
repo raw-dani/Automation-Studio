@@ -392,15 +392,15 @@ class ExecutionPanel(QWidget):
         settings_row2.addSpacing(12)
         settings_row2.addWidget(QLabel("Rows:"))
         self.row_range_combo = QComboBox()
-        self.row_range_combo.addItems(["All", "Single", "Range"])
+        self.row_range_combo.addItems(["All", "Single", "Custom"])
         self.row_range_combo.setCurrentText("All")
-        self.row_range_combo.setFixedWidth(70)
+        self.row_range_combo.setFixedWidth(80)
         self.row_range_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         self.row_range_combo.setToolTip(
             "Pilih baris data yang akan diproses:\n"
             "- All: Semua baris\n"
             "- Single: Hanya 1 baris tertentu\n"
-            "- Range: Rentang baris (misal 2-10)"
+            "- Custom: Pilih baris tertentu, contoh: 3,7,14 atau 1-5 atau 1-3,7,10-12"
         )
         settings_row2.addWidget(self.row_range_combo)
 
@@ -413,18 +413,24 @@ class ExecutionPanel(QWidget):
         self.row_single_input.hide()
         settings_row2.addWidget(self.row_single_input)
 
-        self.row_range_input = QLineEdit("2-10")
-        self.row_range_input.setFixedWidth(70)
+        self.row_range_input = QLineEdit("1-5")
+        self.row_range_input.setFixedWidth(90)
         self.row_range_input.setStyleSheet("font-size: 10px; padding: 2px;")
-        self.row_range_input.setToolTip("Rentang baris, contoh: 2-10 atau 5,8,12")
+        self.row_range_input.setPlaceholderText("3,7,14 atau 1-5")
+        self.row_range_input.setToolTip(
+            "Format baris yang akan diproses (1-based):\n"
+            "- Baris tertentu: 3,7,14\n"
+            "- Rentang: 1-5\n"
+            "- Campuran: 1-3,7,10-12"
+        )
         self.row_range_input.hide()
         settings_row2.addWidget(self.row_range_input)
 
         def on_row_range_changed(text):
             is_single = text == "Single"
-            is_range = text == "Range"
+            is_custom = text == "Custom"
             self.row_single_input.setVisible(is_single)
-            self.row_range_input.setVisible(is_range)
+            self.row_range_input.setVisible(is_custom)
 
         self.row_range_combo.currentTextChanged.connect(on_row_range_changed)
         settings_row2.addStretch()
@@ -712,7 +718,7 @@ class ExecutionPanel(QWidget):
         row_mode = self.row_range_combo.currentText().lower()
         if row_mode == "single":
             execution_config["row_range"] = {"mode": "single", "row": self.row_single_input.value()}
-        elif row_mode == "range":
+        elif row_mode == "custom":
             execution_config["row_range"] = {"mode": "range", "range_str": self.row_range_input.text().strip()}
         else:
             execution_config["row_range"] = {"mode": "all"}
