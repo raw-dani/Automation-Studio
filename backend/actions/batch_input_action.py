@@ -72,7 +72,7 @@ class BatchInputAction(BaseAction):
                     try {
                         const el = document.querySelector(selector);
                         if (!el) {
-                            results.push({ selector, status: 'not_found', error: 'Element not found' });
+                            results.push({ selector, status: 'not_found', error: 'Element not found', html: document.body.innerHTML.substring(0, 200) });
                             continue;
                         }
                         
@@ -87,17 +87,19 @@ class BatchInputAction(BaseAction):
                             }
                         }
                         
+                        const stringValue = String(value ?? '');
+                        
                         if (tagName === 'input' && (type === 'checkbox' || type === 'radio')) {
-                            const boolVal = String(value).toLowerCase() === 'true' || String(value) === '1' || String(value) === 'yes';
+                            const boolVal = stringValue.toLowerCase() === 'true' || stringValue === '1' || stringValue === 'yes';
                             el.checked = boolVal;
                         } else if (tagName === 'select') {
-                            el.value = String(value);
+                            el.value = stringValue;
                         } else if (tagName === 'textarea') {
-                            el.value = String(value);
+                            el.value = stringValue;
                         } else if (tagName === 'input' && (type === 'text' || type === 'email' || type === 'password' || type === 'number' || type === 'tel' || type === 'url' || type === 'search' || type === 'hidden')) {
-                            el.value = String(value);
+                            el.value = stringValue;
                         } else {
-                            el.value = String(value);
+                            el.value = stringValue;
                         }
                         
                         if (triggerEvents) {
@@ -105,7 +107,13 @@ class BatchInputAction(BaseAction):
                             el.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         
-                        results.push({ selector, status: 'success', tagName, type });
+                        results.push({ 
+                            selector, 
+                            status: 'success', 
+                            tagName, 
+                            type, 
+                            value: el.value 
+                        });
                     } catch (e) {
                         results.push({ selector, status: 'error', error: e.message });
                     }
@@ -116,16 +124,22 @@ class BatchInputAction(BaseAction):
                 "fields": processed_fields,
                 "clearFirst": clear_first,
                 "triggerEvents": trigger_events,
-            }, timeout=timeout)
+            })
             
             failed = [r for r in result if r.get("status") != "success"]
             if failed:
                 error_details = "; ".join([f"{r['selector']}: {r.get('error', r['status'])}" for r in failed[:5]])
+                self._log("WARNING", f"Batch input JS gagal: {error_details}. Mencoba fallback Playwright fill...")
+                
+                fallback_result = await self._playwright_fill_fallback(page, processed_fields, clear_first, wait_after)
+                if fallback_result.status == ActionStatus.SUCCESS:
+                    return fallback_result
+                
                 return ActionResult(
                     status=ActionStatus.FAILED,
                     message=f"Batch input gagal pada {len(failed)} field: {error_details}",
                     error="Field fill failed",
-                    data={"results": result},
+                    data={"results": result, "fallback_error": fallback_result.message},
                 )
             
             if wait_after > 0:
@@ -142,6 +156,45 @@ class BatchInputAction(BaseAction):
             return ActionResult(
                 status=ActionStatus.FAILED,
                 message=f"Batch input gagal: {str(e)}",
+                error=str(e),
+            )
+    
+    async def _playwright_fill_fallback(self, page, fields: dict, clear_first: bool, wait_after: int) -> ActionResult:
+        """Fallback menggunakan Playwright fill() per field jika JS gagal."""
+        try:
+            success_count = 0
+            for selector, value in fields.items():
+                try:
+                    locator = page.locator(selector).first
+                    if await locator.count() == 0:
+                        continue
+                    
+                    if clear_first:
+                        await locator.fill("")
+                    await locator.fill(str(value))
+                    success_count += 1
+                except Exception:
+                    continue
+            
+            if success_count == 0:
+                return ActionResult(
+                    status=ActionStatus.FAILED,
+                    message="Fallback Playwright fill juga gagal mengisi field apapun.",
+                    error="All fields failed",
+                )
+            
+            if wait_after > 0:
+                await asyncio.sleep(wait_after / 1000)
+            
+            return ActionResult(
+                status=ActionStatus.SUCCESS,
+                message=f"Fallback Playwright fill berhasil mengisi {success_count}/{len(fields)} field.",
+                data={"fallback": True, "filled": success_count},
+            )
+        except Exception as e:
+            return ActionResult(
+                status=ActionStatus.FAILED,
+                message=f"Fallback Playwright fill gagal: {str(e)}",
                 error=str(e),
             )
     
