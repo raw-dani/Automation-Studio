@@ -284,8 +284,6 @@ class ExecutionPanel(QWidget):
         self.session_mode_combo = QComboBox()
         self.session_mode_combo.addItems(["default", "persistent", "connect"])
         self.session_mode_combo.setCurrentText("persistent")
-        self.session_mode_combo.setMinimumWidth(100)
-        self.session_mode_combo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.session_mode_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         self.session_mode_combo.setToolTip(
             "Mode sesi browser:\n"
@@ -305,8 +303,6 @@ class ExecutionPanel(QWidget):
         self.browser_combo = QComboBox()
         self.browser_combo.addItems(["Chromium", "Firefox", "WebKit"])
         self.browser_combo.setCurrentText("Chromium")
-        self.browser_combo.setMinimumWidth(90)
-        self.browser_combo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.browser_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         self.browser_combo.setToolTip("Mesin browser yang digunakan untuk otomasi")
         row1.addWidget(self.browser_combo)
@@ -327,7 +323,6 @@ class ExecutionPanel(QWidget):
         self.user_data_dir_input.setPlaceholderText("Folder session browser")
         self.user_data_dir_input.setStyleSheet("font-size: 10px; padding: 2px;")
         self.user_data_dir_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.user_data_dir_input.setMinimumWidth(120)
         session_row.addWidget(self.user_data_dir_input, 1)
 
         self.cdp_endpoint_label = QLabel("CDP Endpoint:")
@@ -336,12 +331,11 @@ class ExecutionPanel(QWidget):
         self.cdp_endpoint_input.setPlaceholderText("http://localhost:9222")
         self.cdp_endpoint_input.setStyleSheet("font-size: 10px; padding: 2px;")
         self.cdp_endpoint_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.cdp_endpoint_input.setMinimumWidth(120)
         session_row.addWidget(self.cdp_endpoint_input, 1)
 
         browser_layout.addLayout(session_row)
 
-        # Detect + speed row
+        # Detect row
         detect_row = QHBoxLayout()
         self.detect_browser_btn = QPushButton("🔍 Detect Browsers")
         self.detect_browser_btn.setStyleSheet("""
@@ -359,27 +353,27 @@ class ExecutionPanel(QWidget):
         self.detected_browser_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         detect_row.addWidget(self.detected_browser_label, 1)
 
-        detect_row.addSpacing(12)
-        detect_row.addWidget(QLabel("Speed:"))
+        browser_layout.addLayout(detect_row)
+
+        # Speed row
+        speed_row = QHBoxLayout()
+        speed_row.addWidget(QLabel("Speed:"))
         self.slow_mo_slider = QSlider(Qt.Horizontal)
         self.slow_mo_slider.setRange(0, 3000)
         self.slow_mo_slider.setValue(100)
         self.slow_mo_slider.setTickPosition(QSlider.TicksBelow)
         self.slow_mo_slider.setTickInterval(500)
-        self.slow_mo_slider.setMinimumWidth(100)
-        self.slow_mo_slider.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        detect_row.addWidget(self.slow_mo_slider, 1)
+        speed_row.addWidget(self.slow_mo_slider, 1)
 
         self.slow_mo_label = QLabel("100ms")
-        self.slow_mo_label.setMinimumWidth(40)
         self.slow_mo_label.setStyleSheet("font-size: 10px; color: #666;")
         self.slow_mo_slider.valueChanged.connect(
             lambda v: self.slow_mo_label.setText(f"{v}ms")
         )
-        detect_row.addWidget(self.slow_mo_label)
+        speed_row.addWidget(self.slow_mo_label)
 
-        detect_row.addWidget(QLabel("(0=fast, 3000=slow)"))
-        browser_layout.addLayout(detect_row)
+        speed_row.addWidget(QLabel("(0=fast, 3000=slow)"))
+        browser_layout.addLayout(speed_row)
 
         settings_layout.addWidget(browser_group)
 
@@ -402,8 +396,6 @@ class ExecutionPanel(QWidget):
         self.retry_combo = QComboBox()
         self.retry_combo.addItems(["0", "1", "2", "3", "5", "10"])
         self.retry_combo.setCurrentText("3")
-        self.retry_combo.setMinimumWidth(50)
-        self.retry_combo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.retry_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         exec_row1.addWidget(self.retry_combo)
 
@@ -418,8 +410,6 @@ class ExecutionPanel(QWidget):
         self.skip_action_combo = QComboBox()
         self.skip_action_combo.addItems(["None", "Navigate", "Click"])
         self.skip_action_combo.setCurrentText("None")
-        self.skip_action_combo.setMinimumWidth(80)
-        self.skip_action_combo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.skip_action_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         self.skip_action_combo.setToolTip(
             "Aksi setelah skip baris gagal:\n"
@@ -433,7 +423,6 @@ class ExecutionPanel(QWidget):
         self.skip_action_target.setPlaceholderText("URL atau selector")
         self.skip_action_target.setStyleSheet("font-size: 10px; padding: 2px;")
         self.skip_action_target.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.skip_action_target.setMinimumWidth(100)
         self.skip_action_target.setToolTip("URL untuk Navigate, atau CSS selector untuk Click")
         self.skip_action_target.hide()
         exec_row1.addWidget(self.skip_action_target, 1)
@@ -458,8 +447,6 @@ class ExecutionPanel(QWidget):
         self.row_range_combo = QComboBox()
         self.row_range_combo.addItems(["All", "Single", "Custom"])
         self.row_range_combo.setCurrentText("All")
-        self.row_range_combo.setMinimumWidth(80)
-        self.row_range_combo.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.row_range_combo.setStyleSheet("font-size: 10px; padding: 2px;")
         self.row_range_combo.setToolTip(
             "Pilih baris data yang akan diproses:\n"
@@ -472,8 +459,6 @@ class ExecutionPanel(QWidget):
         self.row_single_input = QSpinBox()
         self.row_single_input.setRange(1, 999999)
         self.row_single_input.setValue(1)
-        self.row_single_input.setMinimumWidth(60)
-        self.row_single_input.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         self.row_single_input.setStyleSheet("font-size: 10px; padding: 2px;")
         self.row_single_input.setToolTip("Nomor baris yang akan diproses (1-based)")
         self.row_single_input.hide()
@@ -483,7 +468,6 @@ class ExecutionPanel(QWidget):
         self.row_range_input.setPlaceholderText("3,7,14 atau 1-5")
         self.row_range_input.setStyleSheet("font-size: 10px; padding: 2px;")
         self.row_range_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.row_range_input.setMinimumWidth(80)
         self.row_range_input.setToolTip(
             "Format baris yang akan diproses (1-based):\n"
             "- Baris tertentu: 3,7,14\n"
