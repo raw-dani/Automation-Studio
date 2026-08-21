@@ -72,7 +72,8 @@ class Select2Action(BaseAction):
         if wait_before > 0:
             await asyncio.sleep(wait_before / 1000)
 
-        result = await self._execute_select2(page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after)
+        type_delay = params.get("type_delay", 0)
+        result = await self._execute_select2(page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after, type_delay)
         if result.status == ActionStatus.SUCCESS:
             return result
 
@@ -85,7 +86,7 @@ class Select2Action(BaseAction):
 
         return result
 
-    async def _execute_select2(self, page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after):
+    async def _execute_select2(self, page, context, params, selector, search_selector, value, timeout, clear_first, add_new, wait_after, type_delay=0):
         """Logic utama Select2: klik trigger, buka dropdown, search, pilih opsi."""
         try:
             adjacent_trigger = f"{selector} + .select2-container .select2-selection--single, {selector} + .select2-container"
@@ -112,8 +113,11 @@ class Select2Action(BaseAction):
                     await page.fill(target_input, "")
                     await asyncio.sleep(0.2)
 
-                await page.type(target_input, value, delay=80)
-                await asyncio.sleep(0.6)
+                if type_delay and type_delay > 0:
+                    await page.type(target_input, value, delay=type_delay)
+                else:
+                    await page.fill(target_input, value)
+                await asyncio.sleep(0.3)
 
                 option_selector = await self._find_option(page, value, timeout=timeout)
 
