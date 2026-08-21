@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
     QProgressBar, QGroupBox, QLineEdit, QCheckBox, QSlider,
     QComboBox, QListWidget, QListWidgetItem, QScrollArea,
     QFrame, QSplitter, QSizePolicy, QAbstractItemView, QMessageBox,
-    QSpinBox,
+    QSpinBox, QDialog,
 )
 from PySide6.QtCore import Qt, Signal, QThread, QTimer, QSize
 from PySide6.QtGui import QFont, QColor, QIcon, QPixmap, QPainter
@@ -114,9 +114,14 @@ class ExecutionPanel(QWidget):
         self._waiting_for_step_continue = False
         self.setWindowTitle("Execution")
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        content_widget = QWidget()
+        self._content_layout = QVBoxLayout(content_widget)
+        self._content_layout.setContentsMargins(4, 4, 4, 4)
+        self._content_layout.setSpacing(4)
 
         # Title
         title = QLabel("Execution")
@@ -126,7 +131,7 @@ class ExecutionPanel(QWidget):
         title.setFont(title_font)
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("color: #333; padding: 8px;")
-        layout.addWidget(title)
+        self._content_layout.addWidget(title)
 
         # ==================== TOP SECTION: Workflow Info ====================
         info_group = QGroupBox("Workflow")
@@ -173,7 +178,7 @@ class ExecutionPanel(QWidget):
         self.save_feedback_label.setStyleSheet("color: #4CAF50; font-size: 10px; padding: 2px;")
         info_layout.addWidget(self.save_feedback_label)
 
-        layout.addWidget(info_group)
+        self._content_layout.addWidget(info_group)
 
         # ==================== CONTROL BUTTONS ====================
         btn_group = QGroupBox("Controls")
@@ -260,7 +265,7 @@ class ExecutionPanel(QWidget):
 
         btn_layout.addLayout(row2)
 
-        layout.addWidget(btn_group)
+        self._content_layout.addWidget(btn_group)
 
         # ==================== SETTINGS SECTION ====================
         settings_group = QGroupBox("Settings")
@@ -488,20 +493,19 @@ class ExecutionPanel(QWidget):
         self.row_range_input.hide()
         rows_row.addWidget(self.row_range_input, 1)
 
-        rows_row.addStretch()
+        def on_row_range_changed(text):
+            is_single = text == "Single"
+            is_custom = text == "Custom"
+            self.row_single_input.setVisible(is_single)
+            self.row_range_input.setVisible(is_custom)
+
+        self.row_range_combo.currentTextChanged.connect(on_row_range_changed)
+
         rows_layout.addLayout(rows_row)
 
         settings_layout.addWidget(rows_group)
 
-        # Wrap settings in scroll area for proportional height
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll_area.setFrameShape(QFrame.NoFrame)
-        scroll_area.setMinimumHeight(200)
-        scroll_area.setWidget(settings_group)
-        layout.addWidget(scroll_area)
+        self._content_layout.addWidget(settings_group)
 
         # ==================== PROGRESS SECTION ====================
         progress_group = QGroupBox("Progress")
@@ -560,15 +564,10 @@ class ExecutionPanel(QWidget):
 
         progress_layout.addLayout(detail_row)
 
-        layout.addWidget(progress_group)
+        self._content_layout.addWidget(progress_group)
 
-        # ==================== STEP LIST ====================
-        step_list_group = QGroupBox("Steps")
-        step_list_layout = QVBoxLayout(step_list_group)
-        step_list_layout.setContentsMargins(6, 10, 6, 6)
-        step_list_layout.setSpacing(2)
-
-        self.step_list = QListWidget()
+        # Hidden step list for internal tracking (not displayed in UI)
+        self.step_list = QListWidget(self)
         self.step_list.setSelectionMode(QAbstractItemView.SingleSelection)
         self.step_list.setStyleSheet("""
             QListWidget {
@@ -590,21 +589,15 @@ class ExecutionPanel(QWidget):
             }
         """)
         self.step_list.itemDoubleClicked.connect(self._on_step_double_clicked)
-        step_list_layout.addWidget(self.step_list)
 
-        # Clear highlight button
-        clear_hl_btn = QPushButton("Clear Highlights")
-        clear_hl_btn.setStyleSheet("""
-            QPushButton {
-                background: #607D8B; color: white; border: none;
-                border-radius: 3px; padding: 3px 8px; font-size: 9px;
-            }
-            QPushButton:hover { background: #546E7A; }
-        """)
-        clear_hl_btn.clicked.connect(self._clear_step_highlights)
-        step_list_layout.addWidget(clear_hl_btn)
-
-        layout.addWidget(step_list_group)
+        # Wrap entire content in scroll area for full-page scrolling
+        main_scroll = QScrollArea()
+        main_scroll.setWidgetResizable(True)
+        main_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        main_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        main_scroll.setFrameShape(QFrame.NoFrame)
+        main_scroll.setWidget(content_widget)
+        main_layout.addWidget(main_scroll)
 
         # ==================== STATE ====================
         self._start_time: Optional[datetime] = None
