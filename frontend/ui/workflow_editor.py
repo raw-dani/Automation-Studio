@@ -1048,6 +1048,8 @@ class WorkflowEditor(QWidget):
         from backend.actions.radio_select_action import RadioSelectAction
         from backend.actions.upload_file_action import UploadFileAction
         from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.otp_challenge_action import OtpChallengeAction
+        from backend.actions.login_otp_action import LoginOtpAction
         from backend.actions.loop_action import LoopAction
         from backend.actions.if_else_action import IfElseAction
         from backend.actions.parallel_group_action import ParallelGroupAction
@@ -1061,6 +1063,8 @@ class WorkflowEditor(QWidget):
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
         registry.register(HttpSubmitAction())
+        registry.register(OtpChallengeAction())
+        registry.register(LoginOtpAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(ParallelGroupAction())
@@ -1108,6 +1112,8 @@ class WorkflowEditor(QWidget):
         from backend.actions.radio_select_action import RadioSelectAction
         from backend.actions.upload_file_action import UploadFileAction
         from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.otp_challenge_action import OtpChallengeAction
+        from backend.actions.login_otp_action import LoginOtpAction
         from backend.actions.loop_action import LoopAction
         from backend.actions.if_else_action import IfElseAction
         from backend.actions.parallel_group_action import ParallelGroupAction
@@ -1124,6 +1130,8 @@ class WorkflowEditor(QWidget):
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
         registry.register(HttpSubmitAction())
+        registry.register(OtpChallengeAction())
+        registry.register(LoginOtpAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(ParallelGroupAction())

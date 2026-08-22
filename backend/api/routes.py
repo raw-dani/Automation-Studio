@@ -38,6 +38,8 @@ from backend.actions.select_action import SelectAction
 from backend.actions.select2_action import Select2Action
 from backend.actions.radio_select_action import RadioSelectAction
 from backend.actions.http_submit_action import HttpSubmitAction
+from backend.actions.otp_challenge_action import OtpChallengeAction
+from backend.actions.login_otp_action import LoginOtpAction
 from backend.actions.parallel_group_action import ParallelGroupAction
 
 
@@ -60,6 +62,8 @@ def create_app(config: dict = None) -> FastAPI:
     action_registry.register(IfElseAction())
     action_registry.register(NavigateAction())
     action_registry.register(HttpSubmitAction())
+    action_registry.register(OtpChallengeAction())
+    action_registry.register(LoginOtpAction())
     action_registry.register(ParallelGroupAction())
     
     engine = ExecutionEngine(action_registry, config)
@@ -251,6 +255,8 @@ async def list_actions():
     registry.register(NavigateAction())
     registry.register(RadioSelectAction())
     registry.register(HttpSubmitAction())
+    registry.register(OtpChallengeAction())
+    registry.register(LoginOtpAction())
     registry.register(ParallelGroupAction())
     
     return registry.get_action_descriptions()

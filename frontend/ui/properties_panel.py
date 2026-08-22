@@ -124,6 +124,19 @@ FIELD_DESCRIPTIONS = {
     "body": "Request body dalam format JSON",
     "pagination": "Aktifkan pagination untuk mengambil semua halaman data",
     "page_param": "Nama parameter query untuk nomor halaman",
+    "otp_length": "Panjang kode OTP yang diharapkan (digit)",
+    "otp_title": "Judul dialog OTP yang ditampilkan di browser",
+    "otp_description": "Deskripsi petunjuk pada dialog OTP",
+    "otp_auto_submit": "Otomatis klik submit setelah OTP diisi",
+    "username_selector": "Selector untuk field username/email",
+    "username_value": "Nilai username/email yang akan diisi",
+    "password_selector": "Selector untuk field password",
+    "password_value": "Nilai password yang akan diisi",
+    "login_selector": "Selector untuk tombol login",
+    "login_wait_until": "Tunggu kondisi halaman setelah login",
+    "otp_selector": "Selector untuk field input OTP (opsional)",
+    "otp_submit_selector": "Selector untuk tombol submit OTP (opsional)",
+    "check_selector": "Selector untuk cek session valid. Jika ditemukan, skip login",
 }
 
 
@@ -719,6 +732,8 @@ class PropertiesPanel(QWidget):
         from backend.actions.radio_select_action import RadioSelectAction
         from backend.actions.upload_file_action import UploadFileAction
         from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.otp_challenge_action import OtpChallengeAction
+        from backend.actions.login_otp_action import LoginOtpAction
         from backend.actions.loop_action import LoopAction
         from backend.actions.if_else_action import IfElseAction
         from backend.actions.parallel_group_action import ParallelGroupAction
@@ -735,6 +750,8 @@ class PropertiesPanel(QWidget):
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
         registry.register(HttpSubmitAction())
+        registry.register(OtpChallengeAction())
+        registry.register(LoginOtpAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(ParallelGroupAction())
@@ -776,7 +793,8 @@ class PropertiesPanel(QWidget):
         self.type_combo = QComboBox()
         self.type_combo.addItems([
             "click", "http_submit", "input_text", "input_date", "select", "select2", "select_dropdown", "radio_select",
-            "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group", "batch_input"
+            "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group", "batch_input",
+            "otp_challenge", "login_otp"
         ])
         self.type_combo.setCurrentText(action_type)
         self.type_combo.currentTextChanged.connect(self._on_type_change)
@@ -886,6 +904,33 @@ class PropertiesPanel(QWidget):
             self._add_field("wait_after", self.current_params.get("wait_after", 100))
             self._add_field("timeout", self.current_params.get("timeout", 10000))
             self._add_field("trigger_events", self.current_params.get("trigger_events", True))
+
+        elif action_type == "otp_challenge":
+            self._add_field("selector", self.current_params.get("selector", ""))
+            self._add_field("selector_type", self.current_params.get("selector_type", "css"))
+            self._add_field("submit_selector", self.current_params.get("submit_selector", ""))
+            self._add_field("timeout", self.current_params.get("timeout", 120000))
+            self._add_field("otp_length", self.current_params.get("otp_length", 6))
+            self._add_field("title", self.current_params.get("title", "Masukkan Kode OTP"))
+            self._add_field("description", self.current_params.get("description", "Cek SMS/email Anda dan masukkan kode OTP"))
+            self._add_field("auto_submit", self.current_params.get("auto_submit", True))
+
+        elif action_type == "login_otp":
+            self._add_field("username_selector", self.current_params.get("username_selector", ""))
+            self._add_field("username_value", self.current_params.get("username_value", ""))
+            self._add_field("password_selector", self.current_params.get("password_selector", ""))
+            self._add_field("password_value", self.current_params.get("password_value", ""))
+            self._add_field("login_selector", self.current_params.get("login_selector", ""))
+            self._add_field("login_wait_until", self.current_params.get("login_wait_until", "domcontentloaded"))
+            self._add_field("otp_selector", self.current_params.get("otp_selector", ""))
+            self._add_field("otp_submit_selector", self.current_params.get("otp_submit_selector", ""))
+            self._add_field("check_selector", self.current_params.get("check_selector", ""))
+            self._add_field("timeout", self.current_params.get("timeout", 30000))
+            self._add_field("wait_for_otp_timeout", self.current_params.get("wait_for_otp_timeout", 120000))
+            self._add_field("otp_length", self.current_params.get("otp_length", 6))
+            self._add_field("otp_title", self.current_params.get("otp_title", "Masukkan Kode OTP"))
+            self._add_field("otp_description", self.current_params.get("otp_description", "Cek SMS/email Anda dan masukkan kode OTP"))
+            self._add_field("otp_auto_submit", self.current_params.get("otp_auto_submit", True))
 
         elif action_type == "loop":
             self._add_field("loop_type", self.current_params.get("loop_type", "count"))
@@ -1069,13 +1114,14 @@ class PropertiesPanel(QWidget):
             widget = QLineEdit(json.dumps(value, indent=2))
             widget.setStyleSheet("font-family: Consolas, monospace; font-size: 10px;")
             widget.textChanged.connect(lambda v, k=key: self._on_dict_param_change(k, v))
-        elif isinstance(value, str) and key in ("selector_type", "select_by", "wait_type", "loop_type"):
+        elif isinstance(value, str) and key in ("selector_type", "select_by", "wait_type", "loop_type", "login_wait_until"):
             widget = QComboBox()
             options = {
                 "selector_type": ["css", "xpath", "text"],
                 "select_by": ["label", "value", "index"],
                 "wait_type": ["fixed", "until_visible", "until_hidden", "until_selector"],
                 "loop_type": ["count", "data_source", "while"],
+                "login_wait_until": ["domcontentloaded", "load", "networkidle"],
             }.get(key, [value])
             widget.addItems(options)
             if value in options:
@@ -1139,6 +1185,8 @@ class PropertiesPanel(QWidget):
         from backend.actions.radio_select_action import RadioSelectAction
         from backend.actions.upload_file_action import UploadFileAction
         from backend.actions.http_submit_action import HttpSubmitAction
+        from backend.actions.otp_challenge_action import OtpChallengeAction
+        from backend.actions.login_otp_action import LoginOtpAction
         from backend.actions.loop_action import LoopAction
         from backend.actions.if_else_action import IfElseAction
         from backend.actions.parallel_group_action import ParallelGroupAction
@@ -1155,6 +1203,8 @@ class PropertiesPanel(QWidget):
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
         registry.register(HttpSubmitAction())
+        registry.register(OtpChallengeAction())
+        registry.register(LoginOtpAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(ParallelGroupAction())

@@ -30,6 +30,8 @@ ACTION_ICONS = {
     "upload_file": "📤",
     "http_submit": "🌐",
     "batch_input": "🧹",
+    "otp_challenge": "🔢",
+    "login_otp": "🔑",
     # Logic
     "loop": "🔄",
     "if_else": "🔀",
@@ -54,8 +56,8 @@ CATEGORY_COLORS = {
 # Map category to action types
 CATEGORY_ACTIONS = {
     "Navigation": ["click", "wait", "navigate"],
-    "Input": ["input_text", "input_date", "select", "select2", "select_dropdown", "radio_select", "upload_file", "http_submit", "batch_input"],
-    "Logic": ["loop", "if_else", "parallel_group"],
+    "Input": ["input_text", "input_date", "select", "select2", "select_dropdown", "radio_select", "upload_file", "http_submit", "batch_input", "otp_challenge"],
+    "Logic": ["loop", "if_else", "parallel_group", "login_otp"],
     "Detection": ["ocr", "image_detect"],
     "Data": ["extract", "transform"],
 }

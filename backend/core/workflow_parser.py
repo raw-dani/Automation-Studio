@@ -56,7 +56,8 @@ class WorkflowParser:
     
     VALID_ACTIONS = {
         "click", "http_submit", "input_text", "input_date", "select", "select_dropdown", "select2", "radio_select",
-        "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group", "batch_input"
+        "wait", "upload_file", "loop", "if_else", "navigate", "parallel_group", "batch_input",
+        "otp_challenge", "login_otp"
     }
     
     VALID_ON_ERROR = {"stop", "skip", "retry"}

@@ -43,6 +43,8 @@ from backend.actions.select2_action import Select2Action
 from backend.actions.parallel_group_action import ParallelGroupAction
 from backend.actions.radio_select_action import RadioSelectAction
 from backend.actions.http_submit_action import HttpSubmitAction
+from backend.actions.otp_challenge_action import OtpChallengeAction
+from backend.actions.login_otp_action import LoginOtpAction
 from backend.license.license_manager import LicenseManager
 from backend.license.usage_tracker import UsageTracker
 
@@ -160,6 +162,8 @@ class MainWindow(QMainWindow):
         registry.register(RadioSelectAction())
         registry.register(UploadFileAction())
         registry.register(HttpSubmitAction())
+        registry.register(OtpChallengeAction())
+        registry.register(LoginOtpAction())
         registry.register(LoopAction())
         registry.register(IfElseAction())
         registry.register(NavigateAction())
