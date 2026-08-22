@@ -129,8 +129,6 @@ class BatchInputAction(BaseAction):
             failed = [r for r in result if r.get("status") != "success"]
             if failed:
                 error_details = "; ".join([f"{r['selector']}: {r.get('error', r['status'])}" for r in failed[:5]])
-                self._log("WARNING", f"Batch input JS gagal: {error_details}. Mencoba fallback Playwright fill...")
-                
                 fallback_result = await self._playwright_fill_fallback(page, processed_fields, clear_first, wait_after)
                 if fallback_result.status == ActionStatus.SUCCESS:
                     return fallback_result

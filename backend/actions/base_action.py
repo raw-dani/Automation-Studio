@@ -36,6 +36,7 @@ class ExecutionContext:
     page: Any = None  # Playwright page object
     browser: Any = None  # Playwright browser object
     current_data: dict = field(default_factory=dict)  # Data row saat ini dari data source
+    row_number: int = 0  # Nomor baris saat ini (1-based, 0 berarti bukan dari data source)
     workflow_id: str = ""
     execution_id: str = ""
     variables: dict = field(default_factory=dict)  # Variable yang bisa di-set selama eksekusi

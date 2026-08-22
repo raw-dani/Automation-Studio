@@ -573,6 +573,12 @@ class ExecutionEngine:
                     f"Step {step.id}: {result.status.value} - {self._short(result.message)}",
                 )
                 
+                # Log row info jika error dan ada row_number
+                if result.status == ActionStatus.FAILED and getattr(context, 'row_number', 0) > 0:
+                    row_num = context.row_number
+                    row_preview = self._short_row(context.current_data)
+                    self._log("ERROR", f"  Row #{row_num}: {row_preview}")
+                
                 # Log detailed diagnostics jika ada
                 if result.data:
                     if "url_changed" in result.data:
@@ -597,7 +603,10 @@ class ExecutionEngine:
                 
             except Exception as e:
                 last_error = str(e)
-                self._log("WARNING", f"Step {step.id} error (attempt {attempt+1}): {self._short(str(e))}")
+                row_info = ""
+                if getattr(context, 'row_number', 0) > 0:
+                    row_info = f" (row #{context.row_number}: {self._short_row(context.current_data)})"
+                self._log("WARNING", f"Step {step.id} error (attempt {attempt+1}): {self._short(str(e))}{row_info}")
                 
                 if attempt < max_retries:
                     continue
@@ -728,6 +737,7 @@ class ExecutionEngine:
                 break
             
             context.current_data = row.data
+            context.row_number = row.row_number
             self._log("INFO", f"Loop {iteration + 1}/{total_iterations}: {self._short_row(row.data)}")
             
             for body_step in loop_body:
