@@ -235,233 +235,65 @@
     },
     {
       "id": "step_14",
-      "type": "parallel_group",
+      "type": "batch_input",
       "label": "Isi semua field form pemilik",
       "params": {
-        "timeout": 30000,
-        "on_error": "skip"
+        "fields": {
+          "#frmPemohonNonDukcapil #tNIK": "{{data.NIK}}",
+          "#frmPemohonNonDukcapil #tNAMA_LENGKAP": "{{data.NAMA}}",
+          "#frmPemohonNonDukcapil #tALAMAT": "{{data.ALAMAT}}",
+          "#frmPemohonNonDukcapil #tLOKASI": "{{data.TEMPAT LAHIR}}",
+          "#frmPemohonNonDukcapil #tKODE_POS": "",
+          "#frmPemohonNonDukcapil #tDUSUN": "",
+          "#frmPemohonNonDukcapil #tTEMPAT_LAHIR": "{{data.TEMPAT LAHIR}}",
+          "#frmPemohonNonDukcapil #tGOLONGAN_DARAH": "",
+          "#frmPemohonNonDukcapil #tSTATUS_KAWIN": "{{data.STATUS}}",
+          "#frmPemohonNonDukcapil #tAGAMA": ""
+        },
+        "clear_first": true,
+        "wait_after": 100,
+        "timeout": 10000,
+        "trigger_events": true
       },
       "on_error": "stop",
       "retry": {
         "max_retries": 3,
         "delay": 2000
+      }
+    },
+    {
+      "id": "step_14a",
+      "type": "input_date",
+      "label": "Input Tanggal Lahir",
+      "params": {
+        "selector": "#frmPemohonNonDukcapil #tTANGGAL_LAHIR",
+        "value": "{{data.TANGGAL LAHIR}}",
+        "date_format": "dd|MM|yyyy->dd/MM/yyyy",
+        "clear_first": true,
+        "wait_before": 0,
+        "wait_after": 0
       },
-      "steps": [
-        {
-          "id": "step_13a",
-          "type": "input_text",
-          "label": "Input NIK",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tNIK",
-            "value": "{{data.NIK}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 100
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13b",
-          "type": "input_text",
-          "label": "Input Nama",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tNAMA_LENGKAP",
-            "value": "{{data.NAMA}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 100
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13c",
-          "type": "input_text",
-          "label": "Input Alamat",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tALAMAT",
-            "value": "{{data.ALAMAT}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13d",
-          "type": "input_text",
-          "label": "Input Lokasi",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tLOKASI",
-            "value": "{{data.TEMPAT LAHIR}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13e",
-          "type": "input_text",
-          "label": "Input Kode Pos",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tKODE_POS",
-            "value": "",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13f",
-          "type": "input_text",
-          "label": "Input RT/RW",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tDUSUN",
-            "value": "",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13g",
-          "type": "input_text",
-          "label": "Input Tempat Lahir",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tTEMPAT_LAHIR",
-            "value": "{{data.TEMPAT LAHIR}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13h",
-          "type": "input_date",
-          "label": "Input Tanggal Lahir",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tTANGGAL_LAHIR",
-            "value": "{{data.TANGGAL LAHIR}}",
-            "date_format": "dd|MM|yyyy->dd/MM/yyyy",
-            "clear_first": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13j",
-          "type": "input_text",
-          "label": "Input Golongan Darah",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tGOLONGAN_DARAH",
-            "value": "",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13k",
-          "type": "input_text",
-          "label": "Input Status",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tSTATUS_KAWIN",
-            "value": "{{data.STATUS}}",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13l",
-          "type": "input_text",
-          "label": "Input Agama",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tAGAMA",
-            "value": "",
-            "clear_first": true,
-            "use_fill": true,
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        },
-        {
-          "id": "step_13m",
-          "type": "select2",
-          "label": "Pilih Pekerjaan",
-          "params": {
-            "selector": "#frmPemohonNonDukcapil #tJENIS_PEKERJAAN",
-            "value": "Tidak Bekerja",
-            "wait_before": 0,
-            "wait_after": 0
-          },
-          "on_error": "stop",
-          "retry": {
-            "max_retries": 3,
-            "delay": 2000
-          }
-        }
-      ]
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
+      "id": "step_14b",
+      "type": "select2",
+      "label": "Pilih Pekerjaan",
+      "params": {
+        "selector": "#frmPemohonNonDukcapil #tJENIS_PEKERJAAN",
+        "value": "Tidak Bekerja",
+        "wait_before": 0,
+        "wait_after": 0
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
     },
     {
       "id": "step_15",
