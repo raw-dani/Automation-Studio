@@ -234,6 +234,22 @@
       }
     },
     {
+      "id": "step_13b",
+      "type": "wait",
+      "label": "Tunggu form pemilik muncul",
+      "params": {
+        "wait_type": "until_visible",
+        "selector": "#frmPemohonNonDukcapil",
+        "selector_type": "css",
+        "timeout": 30000
+      },
+      "on_error": "stop",
+      "retry": {
+        "max_retries": 3,
+        "delay": 2000
+      }
+    },
+    {
       "id": "step_14",
       "type": "batch_input",
       "label": "Isi semua field form pemilik",
